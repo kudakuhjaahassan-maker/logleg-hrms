@@ -31,7 +31,7 @@ export default function ForgotPasswordPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-brand">
-          <div className="brand-mark lg">L</div>
+          <img className="auth-logo" src="/assets/logleg-logo.png" alt="LOGLEG" />
           <h1>Reset your password</h1>
           <p>We’ll email you a link to choose a new password.</p>
         </div>

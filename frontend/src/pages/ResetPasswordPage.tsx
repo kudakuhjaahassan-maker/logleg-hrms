@@ -36,7 +36,7 @@ export default function ResetPasswordPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-brand">
-          <div className="brand-mark lg">L</div>
+          <img className="auth-logo" src="/assets/logleg-logo.png" alt="LOGLEG" />
           <h1>Choose a new password</h1>
           <p>Your reset link is valid for one hour.</p>
         </div>

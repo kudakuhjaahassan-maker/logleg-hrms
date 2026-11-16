@@ -52,7 +52,7 @@ export default function RegisterPage() {
     <div className="login-page">
       <div className="login-card">
         <div className="login-brand">
-          <div className="brand-mark lg">L</div>
+          <img className="auth-logo" src="/assets/logleg-logo.png" alt="LOGLEG" />
           <h1>Create your company</h1>
           <p>Register your organization and first admin account</p>
         </div>

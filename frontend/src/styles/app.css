@@ -50,6 +50,7 @@ code { background: #eef2ff; padding: 2px 6px; border-radius: 6px; }
 .brand-mark { width: 32px; height: 32px; border-radius: 8px; background: linear-gradient(135deg, var(--primary-color), var(--primary-hover)); color: var(--text-on-primary); display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 14px; flex: 0 0 auto; }
 .brand-logo { height: 32px; width: auto; max-width: 148px; object-fit: contain; flex: 0 0 auto; }
 .brand-mark.lg { width: 56px; height: 56px; font-size: 24px; margin: 0 auto 8px; }
+.auth-logo { display: block; height: 46px; width: auto; max-width: 100%; margin: 0 auto 10px; }
 .brand-text { min-width: 0; }
 .brand-title { font-weight: 700; letter-spacing: 0.2px; font-size: 15px; line-height: 1.25; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 220px; }
 .brand-sub { font-size: 11px; line-height: 1.2; color: var(--header-muted); }
