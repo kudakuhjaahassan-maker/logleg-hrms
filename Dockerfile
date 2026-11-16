@@ -24,5 +24,6 @@ ENV PORT=3000
 EXPOSE 3000
 
 # Apply additive schema changes (geofence radius, shift times, overtime columns)
-# before serving, so a fresh deploy never runs against an outdated database.
-CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/src/server.js"]
+# before serving, so a fresh deploy never runs against an outdated database, then
+# apply the one-time data fixes (marker-guarded, so they only take effect once).
+CMD ["sh", "-c", "npx prisma db push --skip-generate && npx prisma db execute --file prisma/sql/2026-11-16-company-timezone.sql --schema prisma/schema.prisma && node dist/src/server.js"]
