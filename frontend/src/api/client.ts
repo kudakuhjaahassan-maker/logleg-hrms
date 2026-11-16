@@ -513,4 +513,21 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(data),
     }),
+  subscriptionsCreatePending: (body: { userId: string; email: string; tier: string }) =>
+    request<{ id: string; email: string; tier: string; status: string }>("/subscriptions/pending", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
+  subscriptionsListPending: () =>
+    request<{ requests: { id: string; email: string; tier: string; status: string; createdAt: string }[]> >("/subscriptions/pending"),
+  subscriptionsApprove: (requestId: string) =>
+    request<{ id: string }>("/subscriptions/approve", {
+      method: "POST",
+      body: JSON.stringify({ requestId }),
+    }),
+  subscriptionsReject: (requestId: string) =>
+    request<{ id: string }>("/subscriptions/reject", {
+      method: "POST",
+      body: JSON.stringify({ requestId }),
+    }),
 };

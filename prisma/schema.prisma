@@ -30,6 +30,27 @@ enum UserRole {
   MANAGER
   EMPLOYEE
 }
+}
+
+/// Pending subscription request for Viber payment verification
+model PendingSubscriptionRequest {
+  id            String             @id @default(uuid()) @db.Uuid
+  companyId     String             @db.Uuid
+  userId        String             @db.Uuid
+  email         String
+  tier          SubscriptionPlan   /// starter / growth / enterprise
+  status        String             @default("pending")
+  createdAt     DateTime           @default(now())
+  updatedAt     DateTime           @updatedAt
+
+  company   Company @relation(fields: [companyId], references: [id], onDelete: Cascade)
+  user  User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([companyId])
+  @@index([companyId, status])
+  @@index([tier])
+  @@map("pending_subscription_requests")
+}
 
 enum EmployeeStatus {
   ACTIVE

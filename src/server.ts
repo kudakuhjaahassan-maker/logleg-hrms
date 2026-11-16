@@ -5,6 +5,7 @@ import express, { type NextFunction, type Request, type Response } from "express
 import cors from "cors";
 import prisma from "./lib/prisma";
 import authRoutes from "./modules/auth/auth.routes";
+import subscriptionRoutes from "./modules/subscriptions/subscription.routes";
 import departmentRoutes from "./modules/departments/department.routes";
 import employeeRoutes from "./modules/employees/employee.routes";
 import leaveRoutes from "./modules/leave/leave.routes";
@@ -58,6 +59,7 @@ app.use("/api/leaves", leaveRoutes);
 app.use("/api/attendance", attendanceRoutes);
 app.use("/api/company", companyRoutes);
 app.use("/api/payroll", payrollRoutes);
+app.use("/api/subscriptions", subscriptionRoutes);
 
 // Serve the built frontend in production (single-service deployment).
 const frontendDist = path.resolve(process.cwd(), "frontend/dist");
