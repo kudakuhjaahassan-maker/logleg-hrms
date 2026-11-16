@@ -29,14 +29,14 @@ app.get("/health", async (_req, res) => {
       status: "ok",
       service: "logleg-hrms",
       database: "connected",
-      email: mailStatus().configured ? "configured" : "not_configured",
+      email: mailStatus().configured ? mailStatus().provider : "not_configured",
     });
   } catch {
     res.json({
       status: "degraded",
       service: "logleg-hrms",
       database: "disconnected",
-      email: mailStatus().configured ? "configured" : "not_configured",
+      email: mailStatus().configured ? mailStatus().provider : "not_configured",
     });
   }
 });
