@@ -74,7 +74,17 @@ export default function EmployeeDashboardPage() {
   }, []);
 
   if (loading) return <div className="page"><div className="empty">Loading your portal...</div></div>;
-  if (error) return <div className="page"><div className="alert error">{error}</div></div>;
+  if (error) {
+    // Attendance must stay usable even when the salary summary fails to load.
+    return (
+      <div className="page">
+        <div className="alert error">{error}</div>
+        <div className="grid-dashboard">
+          <ClockWidget />
+        </div>
+      </div>
+    );
+  }
   if (!data) return null;
 
   const { employee, currentPeriod, today, payslips, nextPayslipDate, activeAllowances } = data;

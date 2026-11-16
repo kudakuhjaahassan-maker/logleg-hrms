@@ -1,12 +1,14 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "../hooks/useUser";
+import ClockWidget from "../components/ClockWidget";
 
 export const DashboardPage = () => {
   const { user } = useUser();
 
   return (
     <div className="dashboard-container">
+      <ClockWidget />
       <h2>Quick Links</h2>
       <div className="quick-links">
         {user && (
