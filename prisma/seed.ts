@@ -38,8 +38,7 @@ async function main() {
     create: { companyId: company.id, name: "Engineering" },
   });
 
-  // NOTE: Replace with a real password hashing flow (e.g. bcrypt/argon2) before production use.
-  const demoPasswordHash = "CHANGE_ME_HASHED_PASSWORD";
+  const demoPasswordHash = "$2b$12$HQB/qAhcuGEMzLfBKnx3S.FL8.QvGnsrN0al4Tkx61FFgDSeQFtOK";
 
   await prisma.user.upsert({
     where: { companyId_email: { companyId: company.id, email: "hr.admin@acme.example" } },
