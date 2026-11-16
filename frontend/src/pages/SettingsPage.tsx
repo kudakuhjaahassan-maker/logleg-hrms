@@ -141,6 +141,36 @@ export default function SettingsPage() {
   const resetHeading = () => setHeadingTextColor("#0f172a");
   const resetSub = () => setSubTextColor("#64748b");
 
+  const [payrollDefaultCurrency, setPayrollDefaultCurrency] = useState(company?.defaultCurrency ?? "USD");
+  const [payrollStandardWorkHours, setPayrollStandardWorkHours] = useState(company?.standardWorkHours ?? 8);
+  const [payrollOvertimeMultiplier, setPayrollOvertimeMultiplier] = useState(company?.overtimeMultiplier ?? 1.5);
+
+  const onSubmitPayroll = async () => {
+    setError(null);
+    setSuccess(null);
+    try {
+      await api.updatePayrollConfig({
+        defaultCurrency: payrollDefaultCurrency,
+        standardWorkHours: payrollStandardWorkHours,
+        overtimeMultiplier: payrollOvertimeMultiplier,
+      });
+      setSuccess("Payroll configuration saved.");
+      // Refresh settings
+      const refreshed = await api.getPayrollConfig();
+      setPayrollDefaultCurrency(refreshed.defaultCurrency);
+      setPayrollStandardWorkHours(refreshed.standardWorkHours);
+      setPayrollOvertimeMultiplier(refreshed.overtimeMultiplier);
+    } catch (err: any) {
+      setError(err?.message || "Could not save payroll settings");
+    }
+  };
+
+  useEffect(() => {
+    setPayrollDefaultCurrency(company?.defaultCurrency ?? "USD");
+    setPayrollStandardWorkHours(company?.standardWorkHours ?? 8);
+    setPayrollOvertimeMultiplier(company?.overtimeMultiplier ?? 1.5);
+  }, [company?.defaultCurrency, company?.standardWorkHours, company?.overtimeMultiplier]);
+
   return (
     <div className="page">
       <div className="page-header">
@@ -238,6 +268,61 @@ export default function SettingsPage() {
                 Reset to default
               </button>
             </div>
+
+            <section className="card">
+              <div className="card-header-row">
+                <h3>Payroll Configuration</h3>
+                <span className="subtle">Company-wide payroll settings</span>
+              </div>
+              <form className="form" onSubmit={onSubmitPayroll}>
+                <div>
+                  <label>Default Currency</label>
+                  <select
+                    value={payrollDefaultCurrency}
+                    onChange={(e) => setPayrollDefaultCurrency(e.target.value)}
+                    className="input"
+                  >
+                    <option value="USD">USD — US Dollar</option>
+                    <option value="EUR">EUR — Euro</option>
+                    <option value="GBP">GBP — British Pound</option>
+                    <option value="CAD">CAD — Canadian Dollar</option>
+                    <option value="AED">AED — UAE Dirham</option>
+                  </select>
+                </div>
+                <div>
+                  <label>Standard Work Hours per Day</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="24"
+                    value={payrollStandardWorkHours}
+                    onChange={(e) => setPayrollStandardWorkHours(Number(e.target.value))}
+                    className="input"
+                  />
+                  <span className="subtle">Default working hours per day (used for overtime calculation)</span>
+                </div>
+                <div>
+                  <label>Overtime Multiplier</label>
+                  <input
+                    type="number"
+                    min="1"
+                    max="5"
+                    step="0.1"
+                    value={payrollOvertimeMultiplier}
+                    onChange={(e) => setPayrollOvertimeMultiplier(Number(e.target.value))}
+                    className="input"
+                  />
+                  <span className="subtle">Multiplier for overtime pay (e.g., 1.5 = 50% extra)</span>
+                </div>
+                <div>
+                  <button type="submit" className="btn btn-primary" disabled={loading}>
+                    {loading ? "Saving..." : "Save Payroll Config"}
+                  </button>
+                </div>
+              </form>
+              {error && <div className="alert error">{error}</div>}
+              {success && <div className="alert success">{success}</div>}
+            </section>
 
             <div className="form-section">
               <div className="form-section-title">Workspace surfaces</div>

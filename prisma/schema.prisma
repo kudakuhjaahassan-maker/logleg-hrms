@@ -75,6 +75,10 @@ model Company {
   /// Custom text colours for headings and descriptions.
   headingTextColor   String             @default("#0f172a") @map("heading_text_color")
   subTextColor       String             @default("#64748b") @map("sub_text_color")
+  /// Payroll configuration fields.
+  defaultCurrency    String             @default("USD") @map("default_currency")
+  standardWorkHours  Decimal            @default(8) @db.Decimal(5, 2) @map("standard_work_hours")
+  overtimeMultiplier Decimal            @default(1.5) @db.Decimal(5, 2) @map("overtime_multiplier")
   settings           Json               @default("{}")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

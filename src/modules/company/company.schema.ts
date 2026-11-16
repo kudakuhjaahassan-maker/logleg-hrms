@@ -11,6 +11,13 @@ const sidebarTheme = z.enum(["light", "dark", "brand"], {
   errorMap: () => ({ message: "sidebarTheme must be light, dark, or brand" }),
 });
 
+const currencyEnum = z.enum(["USD", "EUR", "GBP", "CAD", "AED"], {
+  errorMap: () => ({ message: "Currency must be one of: USD, EUR, GBP, CAD, AED" }),
+});
+
+const workHours = z.number().int().min(1).max(24).default(8);
+const overtimeMultiplier = z.number().min(1).max(5).default(1.5);
+
 export const updateCompanySettingsSchema = z
   .object({
     name: z.string().min(2).max(120).optional(),
@@ -22,6 +29,9 @@ export const updateCompanySettingsSchema = z
     sidebarTheme: sidebarTheme.optional(),
     headingTextColor: headingTextColor.optional(),
     subTextColor: subTextColor.optional(),
+    defaultCurrency: currencyEnum.optional(),
+    standardWorkHours: workHours.optional(),
+    overtimeMultiplier: overtimeMultiplier.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one setting must be provided",

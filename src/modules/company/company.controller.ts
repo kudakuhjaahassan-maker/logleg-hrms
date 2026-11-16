@@ -23,3 +23,18 @@ export async function updateSettings(req: Request, res: Response) {
   const company = await companyService.updateCompanySettings(req.auth!.companyId, input);
   res.json({ company });
 }
+
+export async function updatePayrollConfig(req: Request, res: Response) {
+  const input = parse(updateCompanySettingsSchema, req.body);
+  const company = await companyService.updateCompanySettings(req.auth!.companyId, input);
+  res.json({ company });
+}
+
+export async function getPayrollConfig(req: Request, res: Response) {
+  const company = await companyService.getCompany(req.auth!.companyId);
+  res.json({
+    defaultCurrency: company.defaultCurrency,
+    standardWorkHours: company.standardWorkHours,
+    overtimeMultiplier: company.overtimeMultiplier,
+  });
+}

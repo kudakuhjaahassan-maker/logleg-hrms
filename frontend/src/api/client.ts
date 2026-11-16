@@ -371,6 +371,15 @@ export const api = {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
+  updatePayrollConfig: (body: {
+    defaultCurrency?: string;
+    standardWorkHours?: number;
+    overtimeMultiplier?: number;
+  }) => request<{ company: Company }>("/payroll-config", {
+    method: "PATCH",
+    body: JSON.stringify(body),
+  }),
+  getPayrollConfig: () => request<{ defaultCurrency: string; standardWorkHours: number; overtimeMultiplier: number }>("/payroll-config"),
 
   listDepartments: () => request<{ departments: Department[] }>("/departments"),
   createDepartment: (body: { name: string }) =>

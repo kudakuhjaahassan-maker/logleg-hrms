@@ -15,4 +15,15 @@ router.patch(
   asyncHandler(controller.updateSettings),
 );
 
+router.patch(
+  "/payroll-config",
+  authorize("HR_ADMIN", "SUPER_ADMIN"),
+  asyncHandler(controller.updatePayrollConfig),
+);
+
+router.get(
+  "/payroll-config",
+  asyncHandler(controller.getPayrollConfig),
+);
+
 export default router;
