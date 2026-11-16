@@ -2,8 +2,22 @@ import { EmployeeStatus, Prisma, UserRole } from "@prisma/client";
 import prisma from "../../lib/prisma";
 import { HttpError } from "../../utils/http";
 
+const EARTH_RADIUS_METERS = 6371000; // Earth's radius in meters
+
 const WORK_START_HOUR = 9; // 09:00
 const LATE_GRACE_MINUTES = 15; // late if clock-in after 09:15
+
+function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
+  const lat1Rad = (lat1 * Math.PI) / 180;
+  const lat2Rad = (lat2 * Math.PI) / 180;
+  const deltaLat = ((lat2 - lat1) * Math.PI) / 180;
+  const deltaLon = ((lon2 - lon1) * Math.PI) / 180;
+  const a =
+    Math.sin(deltaLat / 2) * Math.sin(deltaLat / 2) +
+    Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2) * Math.cos(lat1Rad) * Math.cos(lat2Rad);
+  const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
+  return EARTH_RADIUS_METERS * c;
+}
 
 function canViewDailyLogs(role: UserRole) {
   return role === "MANAGER" || role === "HR_ADMIN" || role === "SUPER_ADMIN";
@@ -33,6 +47,15 @@ function workedMs(clockIn: Date | null, clockOut: Date | null) {
   return Math.max(0, end.getTime() - clockIn.getTime());
 }
 
+function getAllowedRadiusMeters(companyId: string, employeeId: string) {
+  const company = await prisma.company.findUnique({ where: { id: companyId } });
+  const employee = await prisma.user.findUnique({ where: { id: employeeId } });
+  // Use employee's custom radius if set, otherwise company default (20 meters)
+  const customRadius = employee?.customRadiusMeters;
+  const companyRadius = company?.allowedRadiusMeters ?? 20;
+  return customRadius ?? companyRadius;
+}
+
 export async function getTodayStatus(companyId: string, employeeId: string) {
   const today = startOfDayUtc(new Date());
   const log = await prisma.attendanceLog.findUnique({
@@ -46,7 +69,7 @@ export async function getTodayStatus(companyId: string, employeeId: string) {
   };
 }
 
-export async function clockIn(companyId: string, employeeId: string) {
+export async function clockIn(companyId: string, employeeId: string, latitude?: number, longitude?: number) {
   const today = startOfDayUtc(new Date());
   const now = new Date();
   const existing = await prisma.attendanceLog.findUnique({
@@ -56,11 +79,38 @@ export async function clockIn(companyId: string, employeeId: string) {
     throw new HttpError(400, "Already clocked in for today");
   }
 
+  // Geofence check: calculate distance from office and compare against allowed radius
+  const company = await prisma.company.findUnique({ where: { id: companyId } });
+  const employee = await prisma.user.findUnique({ where: { id: employeeId } });
+  const allowedRadius = getAllowedRadiusMeters(companyId, employeeId);
+
+  let distanceMeters = 0;
+  let geofenceBlocked = false;
+  let distanceMessage = "";
+
+  if (latitude !== undefined && longitude !== undefined && company?.officeLatitude !== undefined && company?.officeLongitude !== undefined) {
+    const officeLat = company.officeLatitude;
+    const officeLng = company.officeLongitude;
+    distanceMeters = haversineDistanceMeters(latitude, longitude, officeLat, officeLng);
+    if (distanceMeters > allowedRadius) {
+      geofenceBlocked = true;
+      distanceMessage = `You are outside your allowed check-in zone (${Math.round(distanceMeters)} meters away).`;
+    }
+  }
+
   const log = await prisma.attendanceLog.upsert({
     where: { companyId_employeeId_date: { companyId, employeeId, date: today } },
-    update: { clockIn: now },
-    create: { companyId, employeeId, date: today, clockIn: now },
+    update: { 
+      clockIn: now,
+      checkInDistanceMeters: geofenceBlocked ? null : distanceMeters,
+    },
+    create: { companyId, employeeId, date: today, clockIn: now, checkInDistanceMeters: geofenceBlocked ? null : distanceMeters },
   });
+
+  if (geofenceBlocked) {
+    throw new HttpError(400, distanceMessage);
+  }
+
   return log;
 }
 
@@ -104,6 +154,7 @@ export async function getDailyLog(
         title: true,
         status: true,
         department: { select: { id: true, name: true } },
+        customRadiusMeters: true,
       },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
     }),

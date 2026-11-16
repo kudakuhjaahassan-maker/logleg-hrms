@@ -19,7 +19,8 @@ export async function myToday(req: Request, res: Response) {
 }
 
 export async function clockIn(req: Request, res: Response) {
-  const log = await attendanceService.clockIn(req.auth!.companyId, req.auth!.userId);
+  const { latitude, longitude } = req.body;
+  const log = await attendanceService.clockIn(req.auth!.companyId, req.auth!.userId, latitude, longitude);
   res.status(201).json({ log });
 }
 

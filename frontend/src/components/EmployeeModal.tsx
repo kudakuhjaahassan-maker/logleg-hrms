@@ -66,6 +66,7 @@ export default function EmployeeModal({ open, mode, employee, departments, emplo
         yearlyBonusEnabled: !!employee.yearlyBonusEnabled,
         yearlyBonusAmount: employee.yearlyBonusAmount ?? 0,
         yearlyBonusCriteria: employee.yearlyBonusCriteria || "",
+        customRadiusMeters: employee.customRadiusMeters,
       });
     } else {
       setForm({
@@ -86,6 +87,7 @@ export default function EmployeeModal({ open, mode, employee, departments, emplo
         overtimeHourlyRate: 0,
         payslipGenerationDay: 28,
         ...allowanceDefaults,
+        customRadiusMeters: employee?.customRadiusMeters,
       });
     }
   }, [open, mode, employee]);
@@ -135,6 +137,7 @@ export default function EmployeeModal({ open, mode, employee, departments, emplo
         yearlyBonusEnabled: !!form.yearlyBonusEnabled,
         yearlyBonusAmount: Number(form.yearlyBonusAmount ?? 0),
         yearlyBonusCriteria: form.yearlyBonusCriteria ? String(form.yearlyBonusCriteria) : null,
+        customRadiusMeters: Number(form.customRadiusMeters ?? 0),
       };
       if (mode === "create") {
         payload.password = form.password;
@@ -227,6 +230,12 @@ export default function EmployeeModal({ open, mode, employee, departments, emplo
               </label>
             </div>
             <p className="field-hint">The payslip for the previous month is automatically generated on the selected day each month (overtime is calculated from attendance beyond standard hours).</p>
+            <div className="grid-2">
+              <label>Custom check-in radius (meters)
+                <input type="number" min="0" max="500" step="1" value={form.customRadiusMeters ?? 0} onChange={(e) => set("customRadiusMeters", e.target.value)} />
+                <span className="subtle">Overrides company default radius for this employee</span>
+              </label>
+            </div>
           </div>
 
           <div className="form-section">

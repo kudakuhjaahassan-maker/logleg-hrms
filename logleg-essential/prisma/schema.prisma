@@ -85,6 +85,20 @@ model Company {
   attendanceLogs AttendanceLog[]
   payrollRecords PayrollRecord[]
 
+  /// Company office location for geofence check-ins.
+  officeLatitude     Float            @default(0)
+  officeLongitude    Float            @default(0)
+
+  /// Custom geofence radius per employee (meters; nullable; overrides company default).
+  /// If null, the company's allowedRadiusMeters is used as the default check-in zone.
+  customRadiusMeters Int?
+
+  departments    Department[]
+  employees      User[]
+  leaveRequests  LeaveRequest[]
+  attendanceLogs AttendanceLog[]
+  payrollRecords PayrollRecord[]
+
   @@index([name])
   @@map("companies")
 }
@@ -149,7 +163,8 @@ model User {
   yearlyBonusEnabled  Boolean @default(false)
   yearlyBonusAmount   Decimal @default(0) @db.Decimal(12, 2)
   yearlyBonusCriteria String? @db.Text
-  createdAt    DateTime       @default(now())
+  /// Per-employee custom check-in radius in meters. If set, overrides the company's allowedRadiusMeters for geofence check-ins.
+  customRadiusMeters Int?
   updatedAt    DateTime       @updatedAt
 
   company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -223,6 +238,8 @@ model AttendanceLog {
   clockOut   DateTime?
   date       DateTime  @db.Date
   notes      String?   @db.Text
+  /// Haversine distance (meters) from office when clocking in; null if geofence not enabled.
+  checkInDistanceMeters Float?
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 

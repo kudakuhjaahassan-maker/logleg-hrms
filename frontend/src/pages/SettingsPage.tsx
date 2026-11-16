@@ -144,6 +144,9 @@ export default function SettingsPage() {
   const [payrollDefaultCurrency, setPayrollDefaultCurrency] = useState(company?.defaultCurrency ?? "USD");
   const [payrollStandardWorkHours, setPayrollStandardWorkHours] = useState(company?.standardWorkHours ?? 8);
   const [payrollOvertimeMultiplier, setPayrollOvertimeMultiplier] = useState(company?.overtimeMultiplier ?? 1.5);
+  const [officeLatitude, setOfficeLatitude] = useState(company?.officeLatitude ?? "");
+  const [officeLongitude, setOfficeLongitude] = useState(company?.officeLongitude ?? "");
+  const [allowedRadiusMeters, setAllowedRadiusMeters] = useState(company?.allowedRadiusMeters ?? 20);
 
   const onSubmitPayroll = async () => {
     setError(null);
@@ -165,11 +168,44 @@ export default function SettingsPage() {
     }
   };
 
+  const onSubmitOfficeSettings = async () => {
+    setError(null);
+    setSuccess(null);
+    try {
+      await api.updateCompanySettings({
+        name: companyName.trim(),
+        logoUrl: logoUrl.trim() === "" ? null : logoUrl.trim(),
+        primaryColor: normalizedColor,
+        cardBgColor: normalizedCard,
+        sidebarTheme,
+        headingTextColor: normalizeHexColor(headingTextColor) ?? "#0f172a",
+        subTextColor: normalizeHexColor(subTextColor) ?? "#64748b",
+        officeLatitude: parseFloat(officeLatitude),
+        officeLongitude: parseFloat(officeLongitude),
+        allowedRadiusMeters,
+      });
+      setSuccess("Office settings and payroll configuration saved.");
+      // Refresh settings
+      const refreshed = await api.getPayrollConfig();
+      setPayrollDefaultCurrency(refreshed.defaultCurrency);
+      setPayrollStandardWorkHours(refreshed.standardWorkHours);
+      setPayrollOvertimeMultiplier(refreshed.overtimeMultiplier);
+      setOfficeLatitude(refreshed.officeLatitude ?? "");
+      setOfficeLongitude(refreshed.officeLongitude ?? "");
+      setAllowedRadiusMeters(refreshed.allowedRadiusMeters ?? 20);
+    } catch (err: any) {
+      setError(err?.message || "Could not save office settings");
+    }
+  };
+
   useEffect(() => {
     setPayrollDefaultCurrency(company?.defaultCurrency ?? "USD");
     setPayrollStandardWorkHours(company?.standardWorkHours ?? 8);
     setPayrollOvertimeMultiplier(company?.overtimeMultiplier ?? 1.5);
-  }, [company?.defaultCurrency, company?.standardWorkHours, company?.overtimeMultiplier]);
+    setOfficeLatitude(company?.officeLatitude ?? "");
+    setOfficeLongitude(company?.officeLongitude ?? "");
+    setAllowedRadiusMeters(company?.allowedRadiusMeters ?? 20);
+  }, [company?.defaultCurrency, company?.standardWorkHours, company?.overtimeMultiplier, company?.officeLatitude, company?.officeLongitude, company?.allowedRadiusMeters]);
 
   return (
     <div className="page">
@@ -504,6 +540,57 @@ export default function SettingsPage() {
               </button>
             </div>
           </form>
+        </section>
+
+        <section className="card">
+          <div className="card-header-row">
+            <h3>Office Location & Check-In Zone</h3>
+            <span className="subtle">Set the company office location and default geofence radius for check-ins</span>
+          </div>
+          <form className="form" onSubmit={onSubmitOfficeSettings}>
+            <div>
+              <label>Office Latitude</label>
+              <input
+                type="number"
+                step="0.000001"
+                value={officeLatitude}
+                onChange={(e) => setOfficeLatitude(e.target.value)}
+                className="input"
+                placeholder="e.g. 37.7749"
+                aria-label="Company office latitude"
+              />
+            </div>
+            <div>
+              <label>Office Longitude</label>
+              <input
+                type="number"
+                step="0.000001"
+                value={officeLongitude}
+                onChange={(e) => setOfficeLongitude(e.target.value)}
+                className="input"
+                placeholder="e.g. -122.4194"
+                aria-label="Company office longitude"
+              />
+            </div>
+            <div>
+              <label>Default Check-In Radius (meters)</label>
+              <input
+                type="number"
+                min="1"
+                max="500"
+                value={allowedRadiusMeters}
+                onChange={(e) => setAllowedRadiusMeters(Number(e.target.value))}
+                className="input"
+                aria-label="Default geofence radius in meters"
+              />
+              <span className="subtle">Used when employee customRadiusMeters is not set</span>
+            </div>
+            <div className="form-section">
+              <button type="submit" className="btn btn-primary" disabled={loading}>{loading ? "Saving..." : "Save Office Settings"}</button>
+            </div>
+          </form>
+          {error && <div className="alert error">{error}</div>}
+          {success && <div className="alert success">{success}</div>}
         </section>
 
         <section className="card">
