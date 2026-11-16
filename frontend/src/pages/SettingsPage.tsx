@@ -151,6 +151,7 @@ export default function SettingsPage() {
   const [payrollDefaultCurrency, setPayrollDefaultCurrency] = useState(company?.defaultCurrency ?? "USD");
   const [payrollStandardWorkHours, setPayrollStandardWorkHours] = useState(Number(company?.standardWorkHours ?? 8));
   const [payrollOvertimeMultiplier, setPayrollOvertimeMultiplier] = useState(Number(company?.overtimeMultiplier ?? 1.5));
+  const [timezone, setTimezone] = useState(company?.timezone ?? "UTC");
   const [officeLatitude, setOfficeLatitude] = useState<string | number>(company?.officeLatitude ?? "");
   const [officeLongitude, setOfficeLongitude] = useState<string | number>(company?.officeLongitude ?? "");
   const [allowedRadiusMeters, setAllowedRadiusMeters] = useState(company?.allowedRadiusMeters ?? 20);
@@ -187,6 +188,7 @@ export default function SettingsPage() {
         sidebarTheme,
         headingTextColor: normalizeHexColor(headingTextColor) ?? "#0f172a",
         subTextColor: normalizeHexColor(subTextColor) ?? "#64748b",
+        timezone: timezone.trim() || "UTC",
         officeLatitude: toCoordinate(officeLatitude),
         officeLongitude: toCoordinate(officeLongitude),
         allowedRadiusMeters,
@@ -197,6 +199,7 @@ export default function SettingsPage() {
       setPayrollDefaultCurrency(refreshed.defaultCurrency);
       setPayrollStandardWorkHours(refreshed.standardWorkHours);
       setPayrollOvertimeMultiplier(refreshed.overtimeMultiplier);
+      setTimezone(refreshed.timezone ?? "UTC");
       setOfficeLatitude(refreshed.officeLatitude ?? "");
       setOfficeLongitude(refreshed.officeLongitude ?? "");
       setAllowedRadiusMeters(refreshed.allowedRadiusMeters ?? 20);
@@ -209,10 +212,11 @@ export default function SettingsPage() {
     setPayrollDefaultCurrency(company?.defaultCurrency ?? "USD");
     setPayrollStandardWorkHours(Number(company?.standardWorkHours ?? 8));
     setPayrollOvertimeMultiplier(Number(company?.overtimeMultiplier ?? 1.5));
+    setTimezone(company?.timezone ?? "UTC");
     setOfficeLatitude(company?.officeLatitude ?? "");
     setOfficeLongitude(company?.officeLongitude ?? "");
     setAllowedRadiusMeters(company?.allowedRadiusMeters ?? 20);
-  }, [company?.defaultCurrency, company?.standardWorkHours, company?.overtimeMultiplier, company?.officeLatitude, company?.officeLongitude, company?.allowedRadiusMeters]);
+  }, [company?.defaultCurrency, company?.standardWorkHours, company?.overtimeMultiplier, company?.timezone, company?.officeLatitude, company?.officeLongitude, company?.allowedRadiusMeters]);
 
   return (
     <div className="page">
@@ -555,6 +559,30 @@ export default function SettingsPage() {
             <span className="subtle">Set the company office location and default geofence radius for check-ins</span>
           </div>
           <form className="form" onSubmit={onSubmitOfficeSettings}>
+            <div>
+              <label>Company Timezone</label>
+              <input
+                type="text"
+                list="company-timezone-options"
+                value={timezone}
+                onChange={(e) => setTimezone(e.target.value)}
+                className="input"
+                placeholder="e.g. Indian/Maldives"
+                aria-label="Company timezone"
+              />
+              <datalist id="company-timezone-options">
+                <option value="Indian/Maldives" />
+                <option value="Asia/Colombo" />
+                <option value="Asia/Dubai" />
+                <option value="Asia/Kolkata" />
+                <option value="Asia/Singapore" />
+                <option value="Europe/London" />
+                <option value="UTC" />
+              </datalist>
+              <span className="subtle">
+                Shift and duty times are read on this clock — 09:00 in Indian/Maldives is 04:00 UTC
+              </span>
+            </div>
             <div>
               <label>Office Latitude</label>
               <input

@@ -115,7 +115,7 @@ export default function AttendancePage() {
       </div>
       {data && (
         <p className="hint">
-          Policy (UTC day {data.date}): each employee's own shift window applies (default {data.policy.defaultShiftStart}–{data.policy.defaultShiftEnd}, {Math.round(data.policy.standardShiftTargetMinutes / 60)}h target).
+          Policy ({data.timeZone} day {data.date}): each employee's own duty window applies in company time (default {data.policy.defaultShiftStart}–{data.policy.defaultShiftEnd}, {Math.round(data.policy.standardShiftTargetMinutes / 60)}h target).
           Working the full target makes up a late arrival; minutes beyond it count as overtime. “Absent” means no clock-in recorded for an active (non-terminated, not on-leave status) employee.
         </p>
       )}

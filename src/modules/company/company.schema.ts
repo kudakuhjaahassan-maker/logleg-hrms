@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isValidTimeZone } from "../../lib/timezone";
 
 const hexColor = z
   .string()
@@ -18,6 +19,12 @@ const currencyEnum = z.enum(["USD", "EUR", "GBP", "CAD", "AED"], {
 const workHours = z.number().int().min(1).max(24).default(8);
 const overtimeMultiplier = z.number().min(1).max(5).default(1.5);
 
+const timeZone = z
+  .string()
+  .min(1)
+  .max(64)
+  .refine((value) => isValidTimeZone(value), "timezone must be an IANA timezone, e.g. Indian/Maldives");
+
 const latitude = z.number().min(-90).max(90);
 const longitude = z.number().min(-180).max(180);
 const radiusMeters = z.number().int().min(1).max(500);
@@ -36,6 +43,8 @@ export const updateCompanySettingsSchema = z
     defaultCurrency: currencyEnum.optional(),
     standardWorkHours: workHours.optional(),
     overtimeMultiplier: overtimeMultiplier.optional(),
+    // Timezone the company's shift times and attendance days are interpreted in.
+    timezone: timeZone.optional(),
     // Office location for geofence check-ins; null clears it and disables the check.
     officeLatitude: latitude.nullable().optional(),
     officeLongitude: longitude.nullable().optional(),

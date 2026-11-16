@@ -1,6 +1,8 @@
 import { EmployeeStatus, Prisma, PayrollStatus, type UserRole } from "@prisma/client";
+import { companyTimeZone } from "../../lib/companyTime";
 import prisma from "../../lib/prisma";
-import { calculateShiftMetrics, startOfDayUtc } from "../../lib/shiftMetrics";
+import { calculateShiftMetrics } from "../../lib/shiftMetrics";
+import { startOfLocalDayUtc } from "../../lib/timezone";
 import { HttpError } from "../../utils/http";
 
 function canManagePayroll(role: UserRole) {
@@ -139,6 +141,7 @@ interface OvertimeSource {
 function overtimeMinutesFor(
   log: OvertimeSource,
   shift: { shiftStartTime?: string | null; shiftEndTime?: string | null },
+  timeZone: string,
 ) {
   if (log.metricsComputedAt || log.overtimeMinutes > 0) return log.overtimeMinutes;
   return calculateShiftMetrics(
@@ -146,7 +149,7 @@ function overtimeMinutesFor(
     log.clockOut,
     shift.shiftStartTime,
     shift.shiftEndTime,
-    startOfDayUtc(log.date),
+    timeZone,
   ).overtimeMinutes;
 }
 
@@ -155,6 +158,8 @@ async function computePeriodStats(
   employee: any,
   period: Period,
 ) {
+  // Overtime is stored per attendance row (company-local shift), so only the
+  // pre-stamp fallback needs the timezone.
   const { start, end } = periodRange(period);
   const logs = await prisma.attendanceLog.findMany({
     where: {
@@ -167,6 +172,7 @@ async function computePeriodStats(
     select: { date: true, clockIn: true, clockOut: true, overtimeMinutes: true, metricsComputedAt: true },
   });
 
+  const timeZone = await companyTimeZone(companyId);
   const otRate = toNumber(employee.overtimeHourlyRate) || 0;
   const base = toNumber(employee.baseSalary) || 0;
 
@@ -180,7 +186,7 @@ async function computePeriodStats(
 
     // Overtime comes from the attendance record, not from raw worked hours, so a
     // payslip agrees with the daily attendance view.
-    const overtimeMinutes = overtimeMinutesFor(log, employee);
+    const overtimeMinutes = overtimeMinutesFor(log, employee, timeZone);
 
     overtimeMinutesTotal += overtimeMinutes;
     totalWorkedHours += workedHours;
@@ -354,7 +360,8 @@ export async function getMyCompensation(companyId: string, employeeId: string) {
   const currentPeriodStats = await computePeriodStats(companyId, employee, cur);
   const activeAllowances = computeAllowances(employee);
 
-  const today = startOfDayUtc(new Date());
+  // "Today" is the office's local day, the same key attendance rows are stored under.
+  const today = startOfLocalDayUtc(new Date(), await companyTimeZone(companyId));
   const todayLog = await prisma.attendanceLog.findUnique({
     where: { companyId_employeeId_date: { companyId, employeeId, date: today } },
   });

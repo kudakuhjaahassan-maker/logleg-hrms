@@ -84,6 +84,8 @@ model Company {
   officeLongitude    Float?             @map("office_longitude")
   /// Default check-in radius (meters); a user's customRadiusMeters overrides it.
   allowedRadiusMeters Int               @default(20) @map("allowed_radius_meters")
+  /// IANA timezone shift times and attendance days are interpreted in, e.g. "Indian/Maldives".
+  timezone           String             @default("UTC") @map("timezone")
   settings           Json               @default("{}")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt

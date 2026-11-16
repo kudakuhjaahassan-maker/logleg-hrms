@@ -1,4 +1,5 @@
 import { EmployeeStatus, UserRole } from "@prisma/client";
+import { companyTimeZone } from "../../lib/companyTime";
 import prisma from "../../lib/prisma";
 import {
   calculateShiftMetrics,
@@ -8,6 +9,7 @@ import {
   startOfDayUtc,
   workedMs,
 } from "../../lib/shiftMetrics";
+import { startOfLocalDayUtc } from "../../lib/timezone";
 import { HttpError } from "../../utils/http";
 
 const EARTH_RADIUS_METERS = 6371000;
@@ -16,8 +18,9 @@ function canViewDailyLogs(role: UserRole) {
   return role === "MANAGER" || role === "HR_ADMIN" || role === "SUPER_ADMIN";
 }
 
-function parseDateParam(dateStr?: string) {
-  if (!dateStr) return startOfDayUtc(new Date());
+/** Requested day (already a local calendar day) or the company's current local day. */
+function parseDateParam(dateStr: string | undefined, timeZone: string) {
+  if (!dateStr) return startOfLocalDayUtc(new Date(), timeZone);
   const d = new Date(`${dateStr}T00:00:00.000Z`);
   if (Number.isNaN(d.getTime())) throw new HttpError(400, "Invalid date");
   return startOfDayUtc(d);
@@ -43,27 +46,29 @@ function allowedRadiusMeters(companyAllowedRadius: number, customRadiusMeters: n
 }
 
 export async function getTodayStatus(companyId: string, employeeId: string) {
-  const today = startOfDayUtc(new Date());
-  const [log, employee] = await Promise.all([
-    prisma.attendanceLog.findUnique({
-      where: { companyId_employeeId_date: { companyId, employeeId, date: today } },
-    }),
+  const [timeZone, employee] = await Promise.all([
+    companyTimeZone(companyId),
     prisma.user.findFirst({
       where: { id: employeeId, companyId },
       select: { shiftStartTime: true, shiftEndTime: true },
     }),
   ]);
+  const today = startOfLocalDayUtc(new Date(), timeZone);
+  const log = await prisma.attendanceLog.findUnique({
+    where: { companyId_employeeId_date: { companyId, employeeId, date: today } },
+  });
 
   const metrics = calculateShiftMetrics(
     log?.clockIn ?? null,
     log?.clockOut ?? null,
     employee?.shiftStartTime,
     employee?.shiftEndTime,
-    today,
+    timeZone,
   );
 
   return {
     date: today.toISOString().slice(0, 10),
+    timeZone,
     log,
     workedMs: log ? workedMs(log.clockIn, log.clockOut) : 0,
     isClockedIn: !!(log?.clockIn && !log?.clockOut),
@@ -79,19 +84,16 @@ export async function clockIn(
   latitude?: number,
   longitude?: number,
 ) {
-  const today = startOfDayUtc(new Date());
   const now = new Date();
-  const existing = await prisma.attendanceLog.findUnique({
-    where: { companyId_employeeId_date: { companyId, employeeId, date: today } },
-  });
-  if (existing?.clockIn) {
-    throw new HttpError(400, "Already clocked in for today");
-  }
-
   const [company, employee] = await Promise.all([
     prisma.company.findUnique({
       where: { id: companyId },
-      select: { officeLatitude: true, officeLongitude: true, allowedRadiusMeters: true },
+      select: {
+        officeLatitude: true,
+        officeLongitude: true,
+        allowedRadiusMeters: true,
+        timezone: true,
+      },
     }),
     prisma.user.findFirst({
       where: { id: employeeId, companyId },
@@ -99,6 +101,15 @@ export async function clockIn(
     }),
   ]);
   if (!company) throw new HttpError(404, "Company not found");
+
+  // Attendance is keyed by the office's local day, not the UTC day.
+  const today = startOfLocalDayUtc(now, company.timezone);
+  const existing = await prisma.attendanceLog.findUnique({
+    where: { companyId_employeeId_date: { companyId, employeeId, date: today } },
+  });
+  if (existing?.clockIn) {
+    throw new HttpError(400, "Already clocked in for today");
+  }
 
   let distanceMeters: number | null = null;
   const officeLat = company.officeLatitude;
@@ -127,8 +138,15 @@ export async function clockIn(
 }
 
 export async function clockOut(companyId: string, employeeId: string) {
-  const today = startOfDayUtc(new Date());
   const now = new Date();
+  const [timeZone, employee] = await Promise.all([
+    companyTimeZone(companyId),
+    prisma.user.findFirst({
+      where: { id: employeeId, companyId },
+      select: { shiftStartTime: true, shiftEndTime: true },
+    }),
+  ]);
+  const today = startOfLocalDayUtc(now, timeZone);
   const existing = await prisma.attendanceLog.findUnique({
     where: { companyId_employeeId_date: { companyId, employeeId, date: today } },
   });
@@ -139,16 +157,12 @@ export async function clockOut(companyId: string, employeeId: string) {
     throw new HttpError(400, "Already clocked out for today");
   }
 
-  const employee = await prisma.user.findFirst({
-    where: { id: employeeId, companyId },
-    select: { shiftStartTime: true, shiftEndTime: true },
-  });
   const metrics = calculateShiftMetrics(
     existing.clockIn,
     now,
     employee?.shiftStartTime,
     employee?.shiftEndTime,
-    today,
+    timeZone,
   );
 
   const log = await prisma.attendanceLog.update({
@@ -171,7 +185,8 @@ export async function getDailyLog(
   if (!canViewDailyLogs(viewer.role)) {
     throw new HttpError(403, "Only managers and HR admins can view daily attendance logs");
   }
-  const day = parseDateParam(dateStr);
+  const timeZone = await companyTimeZone(companyId);
+  const day = parseDateParam(dateStr, timeZone);
 
   const [employees, logs] = await Promise.all([
     prisma.user.findMany({
@@ -204,7 +219,7 @@ export async function getDailyLog(
       log?.clockOut ?? null,
       employee.shiftStartTime,
       employee.shiftEndTime,
-      day,
+      timeZone,
     );
 
     let attendanceStatus: "CLOCKED_IN" | "CLOCKED_OUT" | "LATE" | "ABSENT" | "ON_LEAVE";
@@ -238,10 +253,12 @@ export async function getDailyLog(
 
   return {
     date: day.toISOString().slice(0, 10),
+    timeZone,
     summary,
     rows,
     policy: {
       shiftBased: true,
+      timeZone,
       defaultShiftStart: DEFAULT_SHIFT_START,
       defaultShiftEnd: DEFAULT_SHIFT_END,
       standardShiftTargetMinutes: DEFAULT_SHIFT_TARGET_MINUTES,

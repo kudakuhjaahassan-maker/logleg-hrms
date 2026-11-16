@@ -67,6 +67,8 @@ export interface Company {
   defaultCurrency?: string;
   standardWorkHours?: number | string;
   overtimeMultiplier?: number | string;
+  /** IANA timezone shift times are interpreted in, e.g. "Indian/Maldives". */
+  timezone?: string;
   officeLatitude?: number | null;
   officeLongitude?: number | null;
   allowedRadiusMeters?: number;
@@ -88,6 +90,7 @@ export interface AuthUser extends Employee {
     defaultCurrency?: string;
     standardWorkHours?: number | string;
     overtimeMultiplier?: number | string;
+    timezone?: string;
     officeLatitude?: number | null;
     officeLongitude?: number | null;
     allowedRadiusMeters?: number;
@@ -210,10 +213,12 @@ export interface DailyAttendanceRow {
 
 export interface DailyAttendanceResponse {
   date: string;
+  timeZone: string;
   summary: { total: number; clockedIn: number; clockedOut: number; late: number; absent: number; onLeave: number };
   rows: DailyAttendanceRow[];
   policy: {
     shiftBased: boolean;
+    timeZone: string;
     defaultShiftStart: string;
     defaultShiftEnd: string;
     standardShiftTargetMinutes: number;
@@ -404,6 +409,7 @@ export const api = {
     sidebarTheme?: "light" | "dark" | "brand";
     headingTextColor?: string;
     subTextColor?: string;
+    timezone?: string;
     officeLatitude?: number | null;
     officeLongitude?: number | null;
     allowedRadiusMeters?: number;
@@ -417,6 +423,7 @@ export const api = {
       defaultCurrency: string;
       standardWorkHours: number;
       overtimeMultiplier: number;
+      timezone: string;
       officeLatitude: number | null;
       officeLongitude: number | null;
       allowedRadiusMeters: number;
@@ -431,6 +438,7 @@ export const api = {
       defaultCurrency: string;
       standardWorkHours: number;
       overtimeMultiplier: number;
+      timezone: string;
       officeLatitude: number | null;
       officeLongitude: number | null;
       allowedRadiusMeters: number;

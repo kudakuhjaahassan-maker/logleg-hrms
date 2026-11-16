@@ -14,6 +14,7 @@ const publicCompanySelect = {
   defaultCurrency: true,
   standardWorkHours: true,
   overtimeMultiplier: true,
+  timezone: true,
   officeLatitude: true,
   officeLongitude: true,
   allowedRadiusMeters: true,
@@ -50,6 +51,7 @@ export async function updateCompanySettings(
     defaultCurrency?: string;
     standardWorkHours?: number;
     overtimeMultiplier?: number;
+    timezone?: string;
     officeLatitude?: number | null;
     officeLongitude?: number | null;
     allowedRadiusMeters?: number;
@@ -64,6 +66,7 @@ export async function updateCompanySettings(
   if (input.defaultCurrency !== undefined) data.defaultCurrency = input.defaultCurrency;
   if (input.standardWorkHours !== undefined) data.standardWorkHours = input.standardWorkHours;
   if (input.overtimeMultiplier !== undefined) data.overtimeMultiplier = input.overtimeMultiplier;
+  if (input.timezone !== undefined) data.timezone = input.timezone;
   if (input.officeLatitude !== undefined) data.officeLatitude = input.officeLatitude;
   if (input.officeLongitude !== undefined) data.officeLongitude = input.officeLongitude;
   if (input.allowedRadiusMeters !== undefined) data.allowedRadiusMeters = input.allowedRadiusMeters;
