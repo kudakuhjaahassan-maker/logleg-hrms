@@ -15,6 +15,7 @@ import AttendancePage from "./pages/AttendancePage";
 import SettingsPage from "./pages/SettingsPage";
 import CompensationPage from "./pages/CompensationPage";
 import PayslipsAdminPage from "./pages/PayslipsAdminPage";
+import UpgradePage from "./pages/UpgradePage";
 import EmployeeDashboardPage from "./pages/EmployeeDashboardPage";
 
 function Protected({ children }: { children: React.ReactNode }) {
@@ -63,6 +64,7 @@ export default function App() {
         <Route path="compensation" element={<CompensationPage />} />
         <Route path="payslips" element={<PayslipsAdminPage />} />
         <Route path="settings" element={<SettingsPage />} />
+      <Route path="upgrade" element={<UpgradePage />} />
       </Route>
       <Route path="*" element={<Navigate to="/" replace />} />
     </Routes>
