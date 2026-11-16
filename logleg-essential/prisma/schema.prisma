@@ -165,6 +165,14 @@ model User {
   yearlyBonusCriteria String? @db.Text
   /// Per-employee custom check-in radius in meters. If set, overrides the company's allowedRadiusMeters for geofence check-ins.
   customRadiusMeters Int?
+  /// Employee custom shift start time (HH:MM format, e.g. "09:00").
+  shiftStartTime   String    @default("09:00")
+  /// Employee custom shift end time (HH:MM format, e.g. "17:00").
+  shiftEndTime     String    @default("17:00")
+  /// Minutes late for the day (accumulated from clock-in after shiftStartTime).
+  lateMinutes      Int      @default(0)
+  /// Minutes of overtime worked beyond shift target (after late make-up).
+  overtimeMinutes  Int      @default(0)
   updatedAt    DateTime       @updatedAt
 
   company    Company     @relation(fields: [companyId], references: [id], onDelete: Cascade)
@@ -240,6 +248,8 @@ model AttendanceLog {
   notes      String?   @db.Text
   /// Haversine distance (meters) from office when clocking in; null if geofence not enabled.
   checkInDistanceMeters Float?
+  lateMinutes      Int      @default(0)
+  overtimeMinutes  Int      @default(0)
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 

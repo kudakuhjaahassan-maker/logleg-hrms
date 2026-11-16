@@ -3,9 +3,7 @@ import prisma from "../../lib/prisma";
 import { HttpError } from "../../utils/http";
 
 const EARTH_RADIUS_METERS = 6371000; // Earth's radius in meters
-
-const WORK_START_HOUR = 9; // 09:00
-const LATE_GRACE_MINUTES = 15; // late if clock-in after 09:15
+const STANDARD_SHIFT_TARGET_MINUTES = 480; // 8 hours = 480 minutes
 
 function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const lat1Rad = (lat1 * Math.PI) / 180;
@@ -17,6 +15,18 @@ function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2:
     Math.sin(deltaLon / 2) * Math.sin(deltaLon / 2) * Math.cos(lat1Rad) * Math.cos(lat2Rad);
   const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
   return EARTH_RADIUS_METERS * c;
+}
+
+function parseShiftTimeToMinutes(shiftTime: string): number {
+  // Parse HH:MM format to total minutes from midnight
+  const [hours, minutes] = shiftTime.split(":").map(Number);
+  return hours * 60 + minutes;
+}
+
+function formatMinutesToShiftTime(minutes: number): string {
+  const h = String(Math.floor(minutes / 60)).padStart(2, "0");
+  const m = String(minutes % 60).padStart(2, "0");
+  return `${h}:${m}`;
 }
 
 function canViewDailyLogs(role: UserRole) {
@@ -54,6 +64,50 @@ function getAllowedRadiusMeters(companyId: string, employeeId: string) {
   const customRadius = employee?.customRadiusMeters;
   const companyRadius = company?.allowedRadiusMeters ?? 20;
   return customRadius ?? companyRadius;
+}
+
+function calculateShiftMetrics(
+  clockIn: Date | null,
+  clockOut: Date | null,
+  shiftStartTime: string,
+  shiftEndTime: string,
+): { lateMinutes: number; overtimeMinutes: number; totalWorkedMinutes: number; standardShiftTargetMinutes: number } {
+  const shiftStartMin = parseShiftTimeToMinutes(shiftStartTime);
+  const shiftEndMin = parseShiftTimeToMinutes(shiftEndTime);
+  const standardShiftTargetMinutes = shiftEndMin - shiftStartMin; // e.g., 480 for 8h shift
+
+  let totalWorkedMinutes = 0;
+  let lateMinutes = 0;
+  let overtimeMinutes = 0;
+
+  if (clockIn && clockOut) {
+    totalWorkedMinutes = Math.max(0, workedMs(clockIn, clockOut) / 60000); // convert ms to minutes
+  }
+
+  if (clockIn) {
+    const clockInMin = clockIn.getUTCHours() * 60 + clockIn.getUTCMinutes();
+    // Calculate minutes late from shift start
+    if (clockInMin > shiftStartMin) {
+      lateMinutes = clockInMin - shiftStartMin;
+    }
+  }
+
+  // Overtime calculation: if total worked >= standard target
+  // First, use worked minutes to make up any late minutes
+  if (totalWorkedMinutes >= standardShiftTargetMinutes) {
+    // Morning late time is fully made up by working late
+    lateMinutes = 0;
+    // Any minutes beyond standard shift target are overtime
+    overtimeMinutes = Math.max(0, totalWorkedMinutes - standardShiftTargetMinutes);
+  } else {
+    // Not enough hours worked - any deficit is added to late minutes
+    // (capped at total worked minutes to not exceed them)
+    const deficit = standardShiftTargetMinutes - totalWorkedMinutes;
+    lateMinutes = Math.min(deficit, totalWorkedMinutes);
+    overtimeMinutes = 0;
+  }
+
+  return { lateMinutes, overtimeMinutes, totalWorkedMinutes, standardShiftTargetMinutes };
 }
 
 export async function getTodayStatus(companyId: string, employeeId: string) {
@@ -154,6 +208,8 @@ export async function getDailyLog(
         title: true,
         status: true,
         department: { select: { id: true, name: true } },
+        shiftStartTime: true,
+        shiftEndTime: true,
         customRadiusMeters: true,
       },
       orderBy: [{ lastName: "asc" }, { firstName: "asc" }],
@@ -177,11 +233,30 @@ export async function getDailyLog(
     } else {
       attendanceStatus = isLate(log.clockIn, day) ? "LATE" : "CLOCKED_OUT";
     }
+
+    // Calculate shift metrics if employee has shift times and has clocked in/out
+    let { lateMinutes, overtimeMinutes, totalWorkedMinutes, standardShiftTargetMinutes } = { lateMinutes: 0, overtimeMinutes: 0, totalWorkedMinutes: 0, standardShiftTargetMinutes: 480 };
+    if (log?.clockIn && log?.clockOut && e.shiftStartTime && e.shiftEndTime) {
+      const metrics = calculateShiftMetrics(
+        log.clockIn,
+        log.clockOut,
+        e.shiftStartTime,
+        e.shiftEndTime,
+      );
+      lateMinutes = metrics.lateMinutes;
+      overtimeMinutes = metrics.overtimeMinutes;
+      totalWorkedMinutes = metrics.totalWorkedMinutes;
+      standardShiftTargetMinutes = metrics.standardShiftTargetMinutes;
+    }
+
     return {
       employee: e,
       log,
       attendanceStatus,
-      workedMs: log ? workedMs(log.clockIn, log.clockOut) : 0,
+      lateMinutes,
+      overtimeMinutes,
+      totalWorkedMinutes,
+      standardShiftTargetMinutes,
     };
   });
 
@@ -189,7 +264,7 @@ export async function getDailyLog(
     total: rows.length,
     clockedIn: rows.filter((r) => r.attendanceStatus === "CLOCKED_IN").length,
     clockedOut: rows.filter((r) => r.attendanceStatus === "CLOCKED_OUT").length,
-    late: rows.filter((r) => r.attendanceStatus === "LATE").length,
+    late: rows.filter((r) => r.lateMinutes > 0).length,
     absent: rows.filter((r) => r.attendanceStatus === "ABSENT").length,
     onLeave: rows.filter((r) => r.attendanceStatus === "ON_LEAVE").length,
   };
