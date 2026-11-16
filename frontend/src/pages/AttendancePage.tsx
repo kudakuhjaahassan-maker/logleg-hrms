@@ -83,9 +83,12 @@ export default function AttendancePage() {
               <tr>
                 <th>Employee</th>
                 <th>Department</th>
+                <th>Shift</th>
                 <th>Clock in</th>
                 <th>Clock out</th>
                 <th>Worked</th>
+                <th>Late</th>
+                <th>Overtime</th>
                 <th>Status</th>
               </tr>
             </thead>
@@ -97,9 +100,12 @@ export default function AttendancePage() {
                     <div className="subtle">{r.employee.email}{r.employee.title ? ` · ${r.employee.title}` : ""}</div>
                   </td>
                   <td>{r.employee.department?.name || "—"}</td>
+                  <td>{r.employee.shiftStartTime || "—"}–{r.employee.shiftEndTime || "—"}</td>
                   <td>{r.log?.clockIn ? new Date(r.log.clockIn).toLocaleTimeString() : "—"}</td>
                   <td>{r.log?.clockOut ? new Date(r.log.clockOut).toLocaleTimeString() : "—"}</td>
                   <td>{formatMs(r.workedMs)}</td>
+                  <td>{r.lateMinutes > 0 ? formatMs(r.lateMinutes * 60000) : "—"}</td>
+                  <td>{r.overtimeMinutes > 0 ? formatMs(r.overtimeMinutes * 60000) : "—"}</td>
                   <td>{statusBadge(r.attendanceStatus)}</td>
                 </tr>
               ))}
@@ -108,7 +114,10 @@ export default function AttendancePage() {
         )}
       </div>
       {data && (
-        <p className="hint">Policy (UTC day {data.date}): expected start {String(data.policy.workStartHour).padStart(2, "0")}:00, late after {String(data.policy.workStartHour).padStart(2, "0")}:{String(data.policy.lateGraceMinutes).padStart(2, "0")}. “Absent” means no clock-in recorded for an active (non-terminated, not on-leave status) employee.</p>
+        <p className="hint">
+          Policy (UTC day {data.date}): each employee's own shift window applies (default {data.policy.defaultShiftStart}–{data.policy.defaultShiftEnd}, {Math.round(data.policy.standardShiftTargetMinutes / 60)}h target).
+          Working the full target makes up a late arrival; minutes beyond it count as overtime. “Absent” means no clock-in recorded for an active (non-terminated, not on-leave status) employee.
+        </p>
       )}
     </div>
   );

@@ -67,6 +67,8 @@ export default function EmployeeModal({ open, mode, employee, departments, emplo
         yearlyBonusAmount: employee.yearlyBonusAmount ?? 0,
         yearlyBonusCriteria: employee.yearlyBonusCriteria || "",
         customRadiusMeters: employee.customRadiusMeters,
+        shiftStartTime: employee.shiftStartTime || "09:00",
+        shiftEndTime: employee.shiftEndTime || "17:00",
       });
     } else {
       setForm({
@@ -88,6 +90,8 @@ export default function EmployeeModal({ open, mode, employee, departments, emplo
         payslipGenerationDay: 28,
         ...allowanceDefaults,
         customRadiusMeters: employee?.customRadiusMeters,
+        shiftStartTime: employee?.shiftStartTime || "09:00",
+        shiftEndTime: employee?.shiftEndTime || "17:00",
       });
     }
   }, [open, mode, employee]);
@@ -138,6 +142,8 @@ export default function EmployeeModal({ open, mode, employee, departments, emplo
         yearlyBonusAmount: Number(form.yearlyBonusAmount ?? 0),
         yearlyBonusCriteria: form.yearlyBonusCriteria ? String(form.yearlyBonusCriteria) : null,
         customRadiusMeters: Number(form.customRadiusMeters ?? 0),
+        shiftStartTime: String(form.shiftStartTime || "09:00"),
+        shiftEndTime: String(form.shiftEndTime || "17:00"),
       };
       if (mode === "create") {
         payload.password = form.password;
@@ -233,7 +239,15 @@ export default function EmployeeModal({ open, mode, employee, departments, emplo
             <div className="grid-2">
               <label>Custom check-in radius (meters)
                 <input type="number" min="0" max="500" step="1" value={form.customRadiusMeters ?? 0} onChange={(e) => set("customRadiusMeters", e.target.value)} />
-                <span className="subtle">Overrides company default radius for this employee</span>
+                <span className="subtle">Overrides company default radius for this employee (0 uses the company default)</span>
+              </label>
+              <label>Shift start (UTC)
+                <input type="time" value={form.shiftStartTime || "09:00"} onChange={(e) => set("shiftStartTime", e.target.value)} />
+                <span className="subtle">Clock-ins after this time are late</span>
+              </label>
+              <label>Shift end (UTC)
+                <input type="time" value={form.shiftEndTime || "17:00"} onChange={(e) => set("shiftEndTime", e.target.value)} />
+                <span className="subtle">Sets the shift target used for overtime</span>
               </label>
             </div>
           </div>

@@ -8,6 +8,26 @@ function formatMs(ms: number) {
   return `${h}h ${m}m`;
 }
 
+function formatMinutes(minutes?: number) {
+  const total = Math.max(0, Math.floor(minutes ?? 0));
+  return `${Math.floor(total / 60)}h ${total % 60}m`;
+}
+
+/** Device location for the geofence check; resolves to undefined when unavailable. */
+function currentPosition(): Promise<{ latitude: number; longitude: number } | undefined> {
+  return new Promise((resolve) => {
+    if (typeof navigator === "undefined" || !navigator.geolocation) {
+      resolve(undefined);
+      return;
+    }
+    navigator.geolocation.getCurrentPosition(
+      (pos) => resolve({ latitude: pos.coords.latitude, longitude: pos.coords.longitude }),
+      () => resolve(undefined),
+      { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 },
+    );
+  });
+}
+
 export default function ClockWidget() {
   const [data, setData] = useState<AttendanceTodayResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -43,7 +63,7 @@ export default function ClockWidget() {
     setBusy(true);
     setError(null);
     try {
-      if (kind === "in") await api.clockIn();
+      if (kind === "in") await api.clockIn(await currentPosition());
       else await api.clockOut();
       await load();
     } catch (e: any) {
@@ -67,6 +87,9 @@ export default function ClockWidget() {
             <div className="clock-stat"><span className="label">Clock in</span><strong>{data?.log?.clockIn ? new Date(data.log.clockIn).toLocaleTimeString() : "—"}</strong></div>
             <div className="clock-stat"><span className="label">Clock out</span><strong>{data?.log?.clockOut ? new Date(data.log.clockOut).toLocaleTimeString() : "—"}</strong></div>
             <div className="clock-stat"><span className="label">Worked</span><strong>{formatMs(worked)}</strong></div>
+            {data ? <div className="clock-stat"><span className="label">Shift</span><strong>{data.shiftStartTime}–{data.shiftEndTime}</strong></div> : null}
+            {data && data.lateMinutes > 0 ? <div className="clock-stat"><span className="label">Late</span><strong>{formatMinutes(data.lateMinutes)}</strong></div> : null}
+            {data && data.overtimeMinutes > 0 ? <div className="clock-stat"><span className="label">Overtime</span><strong>{formatMinutes(data.overtimeMinutes)}</strong></div> : null}
             <div className="clock-stat"><span className="label">Status</span>
               <strong>
                 {data?.isClockedIn ? <span className="badge status-ACTIVE">Clocked in</span> :
@@ -84,7 +107,10 @@ export default function ClockWidget() {
               Clock Out
             </button>
           </div>
-          <p className="hint" style={{ marginBottom: 0 }}>Logs your daily work hours for today (company-scoped). Managers/HR can view daily attendance status.</p>
+          <p className="hint" style={{ marginBottom: 0 }}>
+            Clock-in is verified against your office location when your company has one configured. Working your full shift
+            makes up any late arrival; time beyond the shift counts as overtime.
+          </p>
         </>
       )}
     </div>

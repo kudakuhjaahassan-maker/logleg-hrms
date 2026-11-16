@@ -38,6 +38,9 @@ const employeeSelect = {
   yearlyBonusEnabled: true,
   yearlyBonusAmount: true,
   yearlyBonusCriteria: true,
+  customRadiusMeters: true,
+  shiftStartTime: true,
+  shiftEndTime: true,
   createdAt: true,
   updatedAt: true,
   department: { select: { id: true, name: true } },
@@ -236,6 +239,9 @@ export async function createEmployee(companyId: string, input: CreateEmployeeInp
         yearlyBonusAmount:
           input.yearlyBonusAmount !== undefined ? new Prisma.Decimal(input.yearlyBonusAmount) : undefined,
         yearlyBonusCriteria: input.yearlyBonusCriteria,
+        customRadiusMeters: input.customRadiusMeters ? input.customRadiusMeters : null,
+        shiftStartTime: input.shiftStartTime,
+        shiftEndTime: input.shiftEndTime,
       },
       select: employeeSelect,
     });
@@ -306,6 +312,10 @@ export async function updateEmployee(
   if (input.yearlyBonusEnabled !== undefined) data.yearlyBonusEnabled = input.yearlyBonusEnabled;
   if (input.yearlyBonusAmount !== undefined) data.yearlyBonusAmount = new Prisma.Decimal(input.yearlyBonusAmount);
   if (input.yearlyBonusCriteria !== undefined) data.yearlyBonusCriteria = input.yearlyBonusCriteria;
+  if (input.customRadiusMeters !== undefined)
+    data.customRadiusMeters = input.customRadiusMeters ? input.customRadiusMeters : null;
+  if (input.shiftStartTime !== undefined) data.shiftStartTime = input.shiftStartTime;
+  if (input.shiftEndTime !== undefined) data.shiftEndTime = input.shiftEndTime;
 
   if (input.password) data.passwordHash = await hashPassword(input.password);
 

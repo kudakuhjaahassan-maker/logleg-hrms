@@ -14,6 +14,9 @@ const publicCompanySelect = {
   defaultCurrency: true,
   standardWorkHours: true,
   overtimeMultiplier: true,
+  officeLatitude: true,
+  officeLongitude: true,
+  allowedRadiusMeters: true,
   subscriptionPlan: true,
   subscriptionStatus: true,
   createdAt: true,
@@ -47,6 +50,9 @@ export async function updateCompanySettings(
     defaultCurrency?: string;
     standardWorkHours?: number;
     overtimeMultiplier?: number;
+    officeLatitude?: number | null;
+    officeLongitude?: number | null;
+    allowedRadiusMeters?: number;
   } = {};
   if (input.name !== undefined) data.name = input.name;
   if (input.logoUrl !== undefined) data.logoUrl = input.logoUrl === "" ? null : input.logoUrl;
@@ -58,6 +64,9 @@ export async function updateCompanySettings(
   if (input.defaultCurrency !== undefined) data.defaultCurrency = input.defaultCurrency;
   if (input.standardWorkHours !== undefined) data.standardWorkHours = input.standardWorkHours;
   if (input.overtimeMultiplier !== undefined) data.overtimeMultiplier = input.overtimeMultiplier;
+  if (input.officeLatitude !== undefined) data.officeLatitude = input.officeLatitude;
+  if (input.officeLongitude !== undefined) data.officeLongitude = input.officeLongitude;
+  if (input.allowedRadiusMeters !== undefined) data.allowedRadiusMeters = input.allowedRadiusMeters;
 
   return prisma.company.update({
     where: { id: companyId },

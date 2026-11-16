@@ -36,5 +36,8 @@ export async function getPayrollConfig(req: Request, res: Response) {
     defaultCurrency: company.defaultCurrency,
     standardWorkHours: company.standardWorkHours,
     overtimeMultiplier: company.overtimeMultiplier,
+    officeLatitude: company.officeLatitude,
+    officeLongitude: company.officeLongitude,
+    allowedRadiusMeters: company.allowedRadiusMeters,
   });
 }

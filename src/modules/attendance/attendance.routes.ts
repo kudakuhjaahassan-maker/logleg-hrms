@@ -9,6 +9,7 @@ const router = Router();
 router.use(authenticate);
 
 router.get("/today", asyncHandler(controller.myToday));
+// Geofence check-in: optional JSON body { latitude: number, longitude: number }
 router.post("/clock-in", asyncHandler(controller.clockIn));
 router.post("/clock-out", asyncHandler(controller.clockOut));
 router.get("/daily", authorize("MANAGER", "HR_ADMIN", "SUPER_ADMIN"), asyncHandler(controller.daily));

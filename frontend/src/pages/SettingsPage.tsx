@@ -19,6 +19,13 @@ import {
   type SidebarTheme,
 } from "../api/branding";
 
+/** Empty input clears the coordinate (null); otherwise parse it. */
+function toCoordinate(value: string | number): number | null {
+  if (value === "" || value === null || value === undefined) return null;
+  const parsed = Number(value);
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 function CheckIcon() {
   return (
     <svg viewBox="0 0 24 24" width="14" height="14" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
@@ -119,8 +126,8 @@ export default function SettingsPage() {
       const res = await api.updateCompanySettings({
         name: companyName.trim(),
         logoUrl: logoUrl.trim() === "" ? null : logoUrl.trim(),
-        primaryColor: normalizedColor,
-        cardBgColor: normalizedCard,
+        primaryColor: normalizedColor ?? DEFAULT_PRIMARY,
+        cardBgColor: normalizedCard ?? DEFAULT_CARD_BG,
         sidebarTheme,
         headingTextColor: normalizeHexColor(headingTextColor) ?? "#0f172a",
         subTextColor: normalizeHexColor(subTextColor) ?? "#64748b",
@@ -142,10 +149,10 @@ export default function SettingsPage() {
   const resetSub = () => setSubTextColor("#64748b");
 
   const [payrollDefaultCurrency, setPayrollDefaultCurrency] = useState(company?.defaultCurrency ?? "USD");
-  const [payrollStandardWorkHours, setPayrollStandardWorkHours] = useState(company?.standardWorkHours ?? 8);
-  const [payrollOvertimeMultiplier, setPayrollOvertimeMultiplier] = useState(company?.overtimeMultiplier ?? 1.5);
-  const [officeLatitude, setOfficeLatitude] = useState(company?.officeLatitude ?? "");
-  const [officeLongitude, setOfficeLongitude] = useState(company?.officeLongitude ?? "");
+  const [payrollStandardWorkHours, setPayrollStandardWorkHours] = useState(Number(company?.standardWorkHours ?? 8));
+  const [payrollOvertimeMultiplier, setPayrollOvertimeMultiplier] = useState(Number(company?.overtimeMultiplier ?? 1.5));
+  const [officeLatitude, setOfficeLatitude] = useState<string | number>(company?.officeLatitude ?? "");
+  const [officeLongitude, setOfficeLongitude] = useState<string | number>(company?.officeLongitude ?? "");
   const [allowedRadiusMeters, setAllowedRadiusMeters] = useState(company?.allowedRadiusMeters ?? 20);
 
   const onSubmitPayroll = async () => {
@@ -175,13 +182,13 @@ export default function SettingsPage() {
       await api.updateCompanySettings({
         name: companyName.trim(),
         logoUrl: logoUrl.trim() === "" ? null : logoUrl.trim(),
-        primaryColor: normalizedColor,
-        cardBgColor: normalizedCard,
+        primaryColor: normalizedColor ?? DEFAULT_PRIMARY,
+        cardBgColor: normalizedCard ?? DEFAULT_CARD_BG,
         sidebarTheme,
         headingTextColor: normalizeHexColor(headingTextColor) ?? "#0f172a",
         subTextColor: normalizeHexColor(subTextColor) ?? "#64748b",
-        officeLatitude: parseFloat(officeLatitude),
-        officeLongitude: parseFloat(officeLongitude),
+        officeLatitude: toCoordinate(officeLatitude),
+        officeLongitude: toCoordinate(officeLongitude),
         allowedRadiusMeters,
       });
       setSuccess("Office settings and payroll configuration saved.");
@@ -200,8 +207,8 @@ export default function SettingsPage() {
 
   useEffect(() => {
     setPayrollDefaultCurrency(company?.defaultCurrency ?? "USD");
-    setPayrollStandardWorkHours(company?.standardWorkHours ?? 8);
-    setPayrollOvertimeMultiplier(company?.overtimeMultiplier ?? 1.5);
+    setPayrollStandardWorkHours(Number(company?.standardWorkHours ?? 8));
+    setPayrollOvertimeMultiplier(Number(company?.overtimeMultiplier ?? 1.5));
     setOfficeLatitude(company?.officeLatitude ?? "");
     setOfficeLongitude(company?.officeLongitude ?? "");
     setAllowedRadiusMeters(company?.allowedRadiusMeters ?? 20);

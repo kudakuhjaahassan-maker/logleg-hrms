@@ -18,6 +18,10 @@ const currencyEnum = z.enum(["USD", "EUR", "GBP", "CAD", "AED"], {
 const workHours = z.number().int().min(1).max(24).default(8);
 const overtimeMultiplier = z.number().min(1).max(5).default(1.5);
 
+const latitude = z.number().min(-90).max(90);
+const longitude = z.number().min(-180).max(180);
+const radiusMeters = z.number().int().min(1).max(500);
+
 export const updateCompanySettingsSchema = z
   .object({
     name: z.string().min(2).max(120).optional(),
@@ -32,6 +36,10 @@ export const updateCompanySettingsSchema = z
     defaultCurrency: currencyEnum.optional(),
     standardWorkHours: workHours.optional(),
     overtimeMultiplier: overtimeMultiplier.optional(),
+    // Office location for geofence check-ins; null clears it and disables the check.
+    officeLatitude: latitude.nullable().optional(),
+    officeLongitude: longitude.nullable().optional(),
+    allowedRadiusMeters: radiusMeters.optional(),
   })
   .refine((data) => Object.keys(data).length > 0, {
     message: "At least one setting must be provided",

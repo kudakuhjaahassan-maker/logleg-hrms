@@ -79,6 +79,11 @@ model Company {
   defaultCurrency    String             @default("USD") @map("default_currency")
   standardWorkHours  Decimal            @default(8) @db.Decimal(5, 2) @map("standard_work_hours")
   overtimeMultiplier Decimal            @default(1.5) @db.Decimal(5, 2) @map("overtime_multiplier")
+  /// Company office location used for geofence check-ins. Null disables the geofence check.
+  officeLatitude     Float?             @map("office_latitude")
+  officeLongitude    Float?             @map("office_longitude")
+  /// Default check-in radius (meters); a user's customRadiusMeters overrides it.
+  allowedRadiusMeters Int               @default(20) @map("allowed_radius_meters")
   settings           Json               @default("{}")
   createdAt          DateTime           @default(now())
   updatedAt          DateTime           @updatedAt
@@ -153,6 +158,12 @@ model User {
   yearlyBonusEnabled  Boolean @default(false)
   yearlyBonusAmount   Decimal @default(0) @db.Decimal(12, 2)
   yearlyBonusCriteria String? @db.Text
+
+  /// Per-employee check-in radius in meters; overrides the company's allowedRadiusMeters when set.
+  customRadiusMeters Int?      @map("custom_radius_meters")
+  /// Employee shift window ("HH:MM", UTC) used for late and overtime calculation.
+  shiftStartTime     String    @default("09:00") @map("shift_start_time")
+  shiftEndTime       String    @default("17:00") @map("shift_end_time")
   createdAt    DateTime       @default(now())
   updatedAt    DateTime       @updatedAt
 
@@ -227,6 +238,12 @@ model AttendanceLog {
   clockOut   DateTime?
   date       DateTime  @db.Date
   notes      String?   @db.Text
+  /// Distance (meters) from the office recorded at clock-in; null when no geofence was applied.
+  checkInDistanceMeters Float? @map("check_in_distance_meters")
+  /// Minutes late against the employee's shift start (0 once the shift target is met).
+  lateMinutes     Int @default(0) @map("late_minutes")
+  /// Minutes worked beyond the shift target, after late make-up.
+  overtimeMinutes Int @default(0) @map("overtime_minutes")
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 

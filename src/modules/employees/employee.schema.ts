@@ -9,6 +9,10 @@ export const listEmployeesQuerySchema = z.object({
   pageSize: z.coerce.number().int().min(1).max(100).default(20),
 });
 
+const shiftTime = z
+  .string()
+  .regex(/^([01]\d|2[0-3]):[0-5]\d$/, "Shift time must be HH:MM (24-hour)");
+
 const employeeBaseSchema = z.object({
   email: z.string().email(),
   firstName: z.string().min(1).max(80),
@@ -43,6 +47,10 @@ const employeeBaseSchema = z.object({
   yearlyBonusEnabled: z.boolean().optional(),
   yearlyBonusAmount: z.coerce.number().min(0).optional(),
   yearlyBonusCriteria: z.string().max(2000).optional().nullable(),
+  // Attendance: geofence override and shift window
+  customRadiusMeters: z.coerce.number().int().min(0).max(500).optional().nullable(),
+  shiftStartTime: shiftTime.optional(),
+  shiftEndTime: shiftTime.optional(),
 });
 
 export const createEmployeeSchema = employeeBaseSchema.extend({

@@ -1,7 +1,7 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
 import { HttpError } from "../../utils/http";
-import { dailyAttendanceQuerySchema } from "./attendance.schema";
+import { clockInBodySchema, dailyAttendanceQuerySchema } from "./attendance.schema";
 import * as attendanceService from "./attendance.service";
 
 function parse<T>(schema: { parse: (d: unknown) => T }, data: unknown): T {
@@ -19,7 +19,13 @@ export async function myToday(req: Request, res: Response) {
 }
 
 export async function clockIn(req: Request, res: Response) {
-  const log = await attendanceService.clockIn(req.auth!.companyId, req.auth!.userId);
+  const body = parse(clockInBodySchema, req.body ?? {});
+  const log = await attendanceService.clockIn(
+    req.auth!.companyId,
+    req.auth!.userId,
+    body.latitude,
+    body.longitude,
+  );
   res.status(201).json({ log });
 }
 

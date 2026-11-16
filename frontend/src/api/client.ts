@@ -44,6 +44,9 @@ export interface Employee {
   yearlyBonusEnabled?: boolean | null;
   yearlyBonusAmount?: number | string | null;
   yearlyBonusCriteria?: string | null;
+  customRadiusMeters?: number | null;
+  shiftStartTime?: string;
+  shiftEndTime?: string;
   createdAt: string;
   updatedAt: string;
   department?: { id: string; name: string } | null;
@@ -61,6 +64,12 @@ export interface Company {
   sidebarTheme: "light" | "dark" | "brand";
   headingTextColor?: string;
   subTextColor?: string;
+  defaultCurrency?: string;
+  standardWorkHours?: number | string;
+  overtimeMultiplier?: number | string;
+  officeLatitude?: number | null;
+  officeLongitude?: number | null;
+  allowedRadiusMeters?: number;
   subscriptionPlan: string;
   subscriptionStatus?: string;
 }
@@ -76,6 +85,12 @@ export interface AuthUser extends Employee {
     sidebarTheme?: "light" | "dark" | "brand";
     headingTextColor?: string;
     subTextColor?: string;
+    defaultCurrency?: string;
+    standardWorkHours?: number | string;
+    overtimeMultiplier?: number | string;
+    officeLatitude?: number | null;
+    officeLongitude?: number | null;
+    allowedRadiusMeters?: number;
     subscriptionPlan: string;
   };
 }
@@ -147,6 +162,9 @@ export interface AttendanceLog {
   clockOut?: string | null;
   date: string;
   notes?: string | null;
+  checkInDistanceMeters?: number | null;
+  lateMinutes?: number;
+  overtimeMinutes?: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -156,6 +174,12 @@ export interface AttendanceTodayResponse {
   log: AttendanceLog | null;
   workedMs: number;
   isClockedIn: boolean;
+  shiftStartTime: string;
+  shiftEndTime: string;
+  lateMinutes: number;
+  overtimeMinutes: number;
+  totalWorkedMinutes: number;
+  standardShiftTargetMinutes: number;
 }
 
 export type DailyAttendanceStatus = "CLOCKED_IN" | "CLOCKED_OUT" | "LATE" | "ABSENT" | "ON_LEAVE";
@@ -168,18 +192,30 @@ export interface DailyAttendanceRow {
     email: string;
     title?: string | null;
     status: EmployeeStatus;
+    shiftStartTime?: string;
+    shiftEndTime?: string;
+    customRadiusMeters?: number | null;
     department?: { id: string; name: string } | null;
   };
   log: AttendanceLog | null;
   attendanceStatus: DailyAttendanceStatus;
   workedMs: number;
+  lateMinutes: number;
+  overtimeMinutes: number;
+  totalWorkedMinutes: number;
+  standardShiftTargetMinutes: number;
 }
 
 export interface DailyAttendanceResponse {
   date: string;
   summary: { total: number; clockedIn: number; clockedOut: number; late: number; absent: number; onLeave: number };
   rows: DailyAttendanceRow[];
-  policy: { workStartHour: number; lateGraceMinutes: number };
+  policy: {
+    shiftBased: boolean;
+    defaultShiftStart: string;
+    defaultShiftEnd: string;
+    standardShiftTargetMinutes: number;
+  };
 }
 
 export type PayrollStatus = "DRAFT" | "PROCESSED" | "PAID";
@@ -366,20 +402,37 @@ export const api = {
     sidebarTheme?: "light" | "dark" | "brand";
     headingTextColor?: string;
     subTextColor?: string;
+    officeLatitude?: number | null;
+    officeLongitude?: number | null;
+    allowedRadiusMeters?: number;
   }) =>
     request<{ company: Company }>("/company/settings", {
       method: "PATCH",
       body: JSON.stringify(body),
     }),
-  updatePayrollConfig: (body: {
-    defaultCurrency?: string;
-    standardWorkHours?: number;
-    overtimeMultiplier?: number;
-  }) => request<{ company: Company }>("/payroll-config", {
-    method: "PATCH",
-    body: JSON.stringify(body),
-  }),
-  getPayrollConfig: () => request<{ defaultCurrency: string; standardWorkHours: number; overtimeMultiplier: number }>("/payroll-config"),
+  updatePayrollConfig: (
+    body: Partial<{
+      defaultCurrency: string;
+      standardWorkHours: number;
+      overtimeMultiplier: number;
+      officeLatitude: number | null;
+      officeLongitude: number | null;
+      allowedRadiusMeters: number;
+    }>,
+  ) =>
+    request<{ company: Company }>("/payroll-config", {
+      method: "PATCH",
+      body: JSON.stringify(body),
+    }),
+  getPayrollConfig: () =>
+    request<{
+      defaultCurrency: string;
+      standardWorkHours: number;
+      overtimeMultiplier: number;
+      officeLatitude: number | null;
+      officeLongitude: number | null;
+      allowedRadiusMeters: number;
+    }>("/payroll-config"),
 
   listDepartments: () => request<{ departments: Department[] }>("/departments"),
   createDepartment: (body: { name: string }) =>
@@ -414,7 +467,11 @@ export const api = {
     request<{ leaveRequest: LeaveRequest }>(`/leaves/${id}/review`, { method: "PATCH", body: JSON.stringify({ status }) }),
 
   attendanceToday: () => request<AttendanceTodayResponse>("/attendance/today"),
-  clockIn: () => request<{ log: AttendanceLog }>("/attendance/clock-in", { method: "POST" }),
+  clockIn: (location?: { latitude: number; longitude: number }) =>
+    request<{ log: AttendanceLog }>("/attendance/clock-in", {
+      method: "POST",
+      body: location ? JSON.stringify(location) : undefined,
+    }),
   clockOut: () => request<{ log: AttendanceLog }>("/attendance/clock-out", { method: "POST" }),
   dailyAttendance: (date?: string) => {
     const qs = date ? `?date=${encodeURIComponent(date)}` : "";

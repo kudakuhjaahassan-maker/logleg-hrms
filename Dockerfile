@@ -23,4 +23,6 @@ ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
 
-CMD ["node", "dist/src/server.js"]
+# Apply additive schema changes (geofence radius, shift times, overtime columns)
+# before serving, so a fresh deploy never runs against an outdated database.
+CMD ["sh", "-c", "npx prisma db push --skip-generate && node dist/src/server.js"]
