@@ -23,7 +23,10 @@ ENV NODE_ENV=production
 ENV PORT=3000
 EXPOSE 3000
 
-# Apply additive schema changes (geofence radius, shift times, overtime columns)
-# before serving, so a fresh deploy never runs against an outdated database, then
-# apply the one-time data fixes (marker-guarded, so they only take effect once).
-CMD ["sh", "-c", "npx prisma db push --skip-generate && npx prisma db execute --file prisma/sql/2026-11-16-company-timezone.sql --schema prisma/schema.prisma && node dist/src/server.js"]
+# Schema sync runs in a bounded, best-effort entrypoint (scripts/start.sh): it is
+# time-limited, warns on failure, and can never keep the Node server from starting.
+# No raw SQL is executed during startup; one-time data fixes run inside the app
+# after listen and swallow their own errors.
+COPY scripts ./scripts
+RUN chmod +x ./scripts/start.sh
+CMD ["./scripts/start.sh"]
