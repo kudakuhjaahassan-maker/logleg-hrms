@@ -12,21 +12,31 @@ import attendanceRoutes from "./modules/attendance/attendance.routes";
 import companyRoutes from "./modules/company/company.routes";
 import payrollRoutes from "./modules/payroll/payroll.routes";
 import { HttpError } from "./utils/http";
+import { applyOneTimeDataFixes } from "./lib/dataMigrations";
 
 const app = express();
 app.use(cors());
 app.use(express.json());
 
+// Liveness: the platform healthcheck hits this, so it must answer whenever the
+// process is up. A transient database blip is reported in the body rather than as
+// a 5xx, which would otherwise fail the deploy and take the whole site down.
 app.get("/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
     res.json({ status: "ok", service: "logleg-hrms", database: "connected" });
   } catch {
-    res.status(503).json({
-      status: "degraded",
-      service: "logleg-hrms",
-      database: "disconnected",
-    });
+    res.json({ status: "degraded", service: "logleg-hrms", database: "disconnected" });
+  }
+});
+
+// Readiness: 503 while the database cannot be reached.
+app.get("/health/ready", async (_req, res) => {
+  try {
+    await prisma.$queryRaw`SELECT 1`;
+    res.json({ status: "ready", database: "connected" });
+  } catch {
+    res.status(503).json({ status: "unavailable", database: "disconnected" });
   }
 });
 
@@ -70,6 +80,9 @@ const port = Number(process.env.PORT ?? 3000);
 if (require.main === module) {
   app.listen(port, "0.0.0.0", () => {
     console.log(`LOGLEG HRMS API listening on http://0.0.0.0:${port}`);
+    // Runs after the port is open and swallows its own errors, so a slow or failed
+    // data fix can never keep the service from answering.
+    void applyOneTimeDataFixes();
   });
 }
 
