@@ -1,13 +1,10 @@
 import { EmployeeStatus, Prisma, PayrollStatus, type UserRole } from "@prisma/client";
 import prisma from "../../lib/prisma";
+import { calculateShiftMetrics, startOfDayUtc } from "../../lib/shiftMetrics";
 import { HttpError } from "../../utils/http";
 
 function canManagePayroll(role: UserRole) {
   return role === "HR_ADMIN" || role === "SUPER_ADMIN" || role === "MANAGER";
-}
-
-function startOfDayUtc(d: Date) {
-  return new Date(Date.UTC(d.getUTCFullYear(), d.getUTCMonth(), d.getUTCDate()));
 }
 
 function daysInMonthUtc(year: number, month1: number) {
@@ -121,6 +118,38 @@ function computeAllowances(employee: any) {
   return { allowancesTotal, yearlyBonus, breakdown: items };
 }
 
+interface OvertimeSource {
+  date: Date;
+  clockIn: Date | null;
+  clockOut: Date | null;
+  overtimeMinutes: number;
+  metricsComputedAt: Date | null;
+}
+
+/**
+ * The overtime a single attendance record stands behind, in minutes.
+ *
+ * Clock-out stamps `metricsComputedAt` as it computes the shift metrics, so a stamped
+ * record is authoritative — including a genuine zero. Records logged before that stamp
+ * existed carry the column default of 0, which says nothing about the day worked, so
+ * their overtime is derived from the employee's shift with the same helper the daily
+ * attendance view uses. A positive stored value is always a real computation, so it is
+ * trusted either way.
+ */
+function overtimeMinutesFor(
+  log: OvertimeSource,
+  shift: { shiftStartTime?: string | null; shiftEndTime?: string | null },
+) {
+  if (log.metricsComputedAt || log.overtimeMinutes > 0) return log.overtimeMinutes;
+  return calculateShiftMetrics(
+    log.clockIn,
+    log.clockOut,
+    shift.shiftStartTime,
+    shift.shiftEndTime,
+    startOfDayUtc(log.date),
+  ).overtimeMinutes;
+}
+
 async function computePeriodStats(
   companyId: string,
   employee: any,
@@ -135,29 +164,32 @@ async function computePeriodStats(
       clockIn: { not: null },
       clockOut: { not: null },
     },
-    select: { clockIn: true, clockOut: true },
+    select: { date: true, clockIn: true, clockOut: true, overtimeMinutes: true, metricsComputedAt: true },
   });
 
-  const standardPerDay = toNumber(employee.standardHoursPerDay) || 8;
   const otRate = toNumber(employee.overtimeHourlyRate) || 0;
   const base = toNumber(employee.baseSalary) || 0;
 
   let totalWorkedHours = 0;
-  let overtimeHours = 0;
   let regularHours = 0;
+  let overtimeMinutesTotal = 0;
 
   for (const log of logs) {
     if (!log.clockIn || !log.clockOut) continue;
-    const worked = Math.max(0, (log.clockOut.getTime() - log.clockIn.getTime()) / 3600000);
-    totalWorkedHours += worked;
-    const reg = Math.min(worked, standardPerDay);
-    regularHours += reg;
-    overtimeHours += Math.max(0, worked - standardPerDay);
+    const workedHours = Math.max(0, (log.clockOut.getTime() - log.clockIn.getTime()) / 3600000);
+
+    // Overtime comes from the attendance record, not from raw worked hours, so a
+    // payslip agrees with the daily attendance view.
+    const overtimeMinutes = overtimeMinutesFor(log, employee);
+
+    overtimeMinutesTotal += overtimeMinutes;
+    totalWorkedHours += workedHours;
+    regularHours += Math.max(0, workedHours * 60 - overtimeMinutes) / 60;
   }
 
   totalWorkedHours = round2(totalWorkedHours);
   regularHours = round2(regularHours);
-  overtimeHours = round2(overtimeHours);
+  const overtimeHours = round2(overtimeMinutesTotal / 60);
   const overtimePay = round2(overtimeHours * otRate);
   const regularPay = round2(base);
   const { allowancesTotal, yearlyBonus, breakdown } = computeAllowances(employee);
@@ -169,6 +201,7 @@ async function computePeriodStats(
     baseSalary: round2(base),
     regularPay,
     overtimeHours,
+    overtimeMinutes: overtimeMinutesTotal,
     overtimePay,
     allowancesTotal,
     yearlyBonus,
@@ -193,6 +226,8 @@ async function ensurePayslipForPeriod(companyId: string, employeeId: string, per
       currencySymbol: true,
       standardHoursPerDay: true,
       overtimeHourlyRate: true,
+      shiftStartTime: true,
+      shiftEndTime: true,
       payslipGenerationDay: true,
       foodAllowanceEnabled: true, foodAllowanceAmount: true,
       accommodationAllowanceEnabled: true, accommodationAllowanceAmount: true,
@@ -296,6 +331,8 @@ export async function getMyCompensation(companyId: string, employeeId: string) {
       currencySymbol: true,
       standardHoursPerDay: true,
       overtimeHourlyRate: true,
+      shiftStartTime: true,
+      shiftEndTime: true,
       payslipGenerationDay: true,
       status: true,
       department: { select: { id: true, name: true } },

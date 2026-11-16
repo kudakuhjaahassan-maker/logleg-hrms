@@ -165,6 +165,8 @@ export interface AttendanceLog {
   checkInDistanceMeters?: number | null;
   lateMinutes?: number;
   overtimeMinutes?: number;
+  /** Null on rows logged before shift metrics existed (payroll re-derives those). */
+  metricsComputedAt?: string | null;
   createdAt: string;
   updatedAt: string;
 }

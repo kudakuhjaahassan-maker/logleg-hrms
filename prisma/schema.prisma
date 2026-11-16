@@ -244,6 +244,9 @@ model AttendanceLog {
   lateMinutes     Int @default(0) @map("late_minutes")
   /// Minutes worked beyond the shift target, after late make-up.
   overtimeMinutes Int @default(0) @map("overtime_minutes")
+  /// When late/overtime minutes were computed from the shift. Null on rows logged before
+  /// shift metrics existed, so payroll derives their overtime instead of paying the 0 default.
+  metricsComputedAt DateTime? @map("metrics_computed_at")
   createdAt  DateTime  @default(now())
   updatedAt  DateTime  @updatedAt
 

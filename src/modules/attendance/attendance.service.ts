@@ -1,19 +1,19 @@
 import { EmployeeStatus, UserRole } from "@prisma/client";
 import prisma from "../../lib/prisma";
+import {
+  calculateShiftMetrics,
+  DEFAULT_SHIFT_END,
+  DEFAULT_SHIFT_START,
+  DEFAULT_SHIFT_TARGET_MINUTES,
+  startOfDayUtc,
+  workedMs,
+} from "../../lib/shiftMetrics";
 import { HttpError } from "../../utils/http";
 
 const EARTH_RADIUS_METERS = 6371000;
-/** Fallback shift length when an employee's shift times are missing or invalid. */
-const DEFAULT_SHIFT_TARGET_MINUTES = 480;
-const DEFAULT_SHIFT_START = "09:00";
-const DEFAULT_SHIFT_END = "17:00";
 
 function canViewDailyLogs(role: UserRole) {
   return role === "MANAGER" || role === "HR_ADMIN" || role === "SUPER_ADMIN";
-}
-
-function startOfDayUtc(date: Date) {
-  return new Date(Date.UTC(date.getUTCFullYear(), date.getUTCMonth(), date.getUTCDate()));
 }
 
 function parseDateParam(dateStr?: string) {
@@ -21,12 +21,6 @@ function parseDateParam(dateStr?: string) {
   const d = new Date(`${dateStr}T00:00:00.000Z`);
   if (Number.isNaN(d.getTime())) throw new HttpError(400, "Invalid date");
   return startOfDayUtc(d);
-}
-
-function workedMs(clockIn: Date | null, clockOut: Date | null) {
-  if (!clockIn) return 0;
-  const end = clockOut ?? new Date();
-  return Math.max(0, end.getTime() - clockIn.getTime());
 }
 
 /** Great-circle distance between two coordinates, in meters. */
@@ -43,77 +37,9 @@ function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2:
   return EARTH_RADIUS_METERS * c;
 }
 
-/** "HH:MM" -> minutes since midnight (UTC). Returns null for malformed input. */
-function parseShiftMinutes(value: string | null | undefined): number | null {
-  if (!value) return null;
-  const match = /^([01]\d|2[0-3]):([0-5]\d)$/.exec(value.trim());
-  if (!match) return null;
-  return Number(match[1]) * 60 + Number(match[2]);
-}
-
-function shiftTargetMinutes(shiftStartTime?: string | null, shiftEndTime?: string | null) {
-  const start = parseShiftMinutes(shiftStartTime ?? DEFAULT_SHIFT_START);
-  const end = parseShiftMinutes(shiftEndTime ?? DEFAULT_SHIFT_END);
-  if (start === null || end === null) return DEFAULT_SHIFT_TARGET_MINUTES;
-  const target = end - start;
-  return target > 0 ? target : DEFAULT_SHIFT_TARGET_MINUTES;
-}
-
 /** Radius allowed for this employee: their override, else the company default. */
 function allowedRadiusMeters(companyAllowedRadius: number, customRadiusMeters: number | null) {
   return customRadiusMeters && customRadiusMeters > 0 ? customRadiusMeters : companyAllowedRadius;
-}
-
-export interface ShiftMetrics {
-  lateMinutes: number;
-  overtimeMinutes: number;
-  totalWorkedMinutes: number;
-  standardShiftTargetMinutes: number;
-}
-
-/**
- * Shift metrics for one attendance record.
- *
- * Late minutes come from clocking in after the employee's shift start. Working
- * the full shift target makes that up: once the target is met the late minutes
- * clear and anything beyond the target becomes overtime. A shortfall keeps the
- * remaining deficit as late minutes.
- */
-function calculateShiftMetrics(
-  clockIn: Date | null,
-  clockOut: Date | null,
-  shiftStartTime?: string | null,
-  shiftEndTime?: string | null,
-  day?: Date,
-): ShiftMetrics {
-  const standardShiftTargetMinutes = shiftTargetMinutes(shiftStartTime, shiftEndTime);
-  const totalWorkedMinutes = clockIn ? Math.floor(workedMs(clockIn, clockOut) / 60000) : 0;
-
-  if (!clockIn) {
-    return { lateMinutes: 0, overtimeMinutes: 0, totalWorkedMinutes: 0, standardShiftTargetMinutes };
-  }
-
-  const shiftStartMinutes = parseShiftMinutes(shiftStartTime ?? DEFAULT_SHIFT_START) ?? 0;
-  const scheduledStart = new Date((day ?? startOfDayUtc(clockIn)).getTime() + shiftStartMinutes * 60000);
-  const arrivedLateMinutes = Math.max(0, Math.floor((clockIn.getTime() - scheduledStart.getTime()) / 60000));
-
-  if (totalWorkedMinutes >= standardShiftTargetMinutes) {
-    return {
-      lateMinutes: 0,
-      overtimeMinutes: totalWorkedMinutes - standardShiftTargetMinutes,
-      totalWorkedMinutes,
-      standardShiftTargetMinutes,
-    };
-  }
-
-  // Still short of the shift target: only the lateness that was not made up remains.
-  const deficit = standardShiftTargetMinutes - totalWorkedMinutes;
-  return {
-    lateMinutes: Math.min(arrivedLateMinutes, deficit),
-    overtimeMinutes: 0,
-    totalWorkedMinutes,
-    standardShiftTargetMinutes,
-  };
 }
 
 export async function getTodayStatus(companyId: string, employeeId: string) {
@@ -231,6 +157,7 @@ export async function clockOut(companyId: string, employeeId: string) {
       clockOut: now,
       lateMinutes: metrics.lateMinutes,
       overtimeMinutes: metrics.overtimeMinutes,
+      metricsComputedAt: now,
     },
   });
   return log;
