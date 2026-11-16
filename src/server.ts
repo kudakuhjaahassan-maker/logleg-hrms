@@ -13,6 +13,7 @@ import companyRoutes from "./modules/company/company.routes";
 import payrollRoutes from "./modules/payroll/payroll.routes";
 import { HttpError } from "./utils/http";
 import { applyOneTimeDataFixes } from "./lib/dataMigrations";
+import { logMailerConfiguration, mailStatus } from "./lib/mailer";
 
 const app = express();
 app.use(cors());
@@ -24,9 +25,19 @@ app.use(express.json());
 app.get("/health", async (_req, res) => {
   try {
     await prisma.$queryRaw`SELECT 1`;
-    res.json({ status: "ok", service: "logleg-hrms", database: "connected" });
+    res.json({
+      status: "ok",
+      service: "logleg-hrms",
+      database: "connected",
+      email: mailStatus().configured ? "configured" : "not_configured",
+    });
   } catch {
-    res.json({ status: "degraded", service: "logleg-hrms", database: "disconnected" });
+    res.json({
+      status: "degraded",
+      service: "logleg-hrms",
+      database: "disconnected",
+      email: mailStatus().configured ? "configured" : "not_configured",
+    });
   }
 });
 
@@ -80,6 +91,7 @@ const port = Number(process.env.PORT ?? 3000);
 if (require.main === module) {
   app.listen(port, "0.0.0.0", () => {
     console.log(`LOGLEG HRMS API listening on http://0.0.0.0:${port}`);
+    logMailerConfiguration();
     // Runs after the port is open and swallows its own errors, so a slow or failed
     // data fix can never keep the service from answering.
     void applyOneTimeDataFixes();

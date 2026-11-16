@@ -229,6 +229,16 @@ export async function requestPasswordReset(input: ForgotPasswordInput, origin?: 
 <p>If you did not request this, you can ignore this email.</p>`,
   });
 
+  // In production the response stays generic, but a failed send is reported as an
+  // error instead of a false "link sent": otherwise a missing SMTP configuration
+  // leaves the user waiting for mail that was never sent.
+  if (!delivery.delivered && isProduction) {
+    throw new HttpError(
+      502,
+      "We couldn't send the reset email. Please ask your administrator to check the email delivery settings.",
+    );
+  }
+
   return {
     message: genericMessage,
     // Exposed only outside production so the flow can be tested without a mail provider.
