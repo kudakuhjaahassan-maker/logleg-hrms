@@ -233,9 +233,14 @@ export async function requestPasswordReset(input: ForgotPasswordInput, origin?: 
   // error instead of a false "link sent": otherwise a missing SMTP configuration
   // leaves the user waiting for mail that was never sent.
   if (!delivery.delivered && isProduction) {
+    // Carry the provider's reason (e.g. "Resend 403: The domain is not verified") so
+    // whoever tests the reset flow can see what to fix instead of a blank failure.
+    const reason = delivery.error?.replace(/^\[[^\]]*\]\s*/, "").slice(0, 160).trim();
     throw new HttpError(
       502,
-      "We couldn't send the reset email. Please ask your administrator to check the email delivery settings.",
+      reason
+        ? `We couldn't send the reset email (${reason}). Please ask your administrator to check the email delivery settings.`
+        : "We couldn't send the reset email. Please ask your administrator to check the email delivery settings.",
     );
   }
 
