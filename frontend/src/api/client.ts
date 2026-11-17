@@ -519,7 +519,7 @@ export const api = {
       body: JSON.stringify(body),
     }),
   subscriptionsListPending: () =>
-    request<{ requests: { id: string; email: string; tier: string; status: string; createdAt: string }[]> >("/subscriptions/pending"),
+    request<{ requests: { id: string; email: string; tier: string; status: string; createdAt: string }[]>>("/subscriptions/pending"),
   subscriptionsApprove: (requestId: string) =>
     request<{ id: string }>("/subscriptions/approve", {
       method: "POST",

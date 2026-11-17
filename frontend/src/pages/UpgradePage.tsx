@@ -151,7 +151,7 @@ export default function UpgradePage() {
 
       {/* Selected tier summary */}
       {selectedTier && (
-        <div className "selected-tier-summary" style={{ marginTop: "24px", padding: "16px", background: "#f3f4f6", borderRadius: "8px" }}>
+        <div className="selected-tier-summary" style={{ marginTop: "24px", padding: "16px", background: "#f3f4f6", borderRadius: "8px" }}>
           <h4 style={{ margin: "0 0 8px 0", color: "#1f2937" }}>Selected Tier</h4>
           <p style={{ margin: "4px 0" }}>
             <strong>{selectedTier.charAt(0).toUpperCase() + selectedTier.slice(1)}</strong> - 
