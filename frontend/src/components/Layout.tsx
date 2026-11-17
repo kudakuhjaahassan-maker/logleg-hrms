@@ -53,6 +53,9 @@ export default function Layout() {
           <NavLink to="/compensation" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             Compensation
           </NavLink>
+          <NavLink to="/upgrade" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+            Upgrade Plan
+          </NavLink>
           {(user?.role === "MANAGER" || user?.role === "HR_ADMIN" || user?.role === "SUPER_ADMIN") && (
             <>
               <NavLink to="/leave-approvals" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
@@ -63,6 +66,9 @@ export default function Layout() {
               </NavLink>
               <NavLink to="/payslips" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
                 Payslips
+              </NavLink>
+              <NavLink to="/management/subscriptions" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
+                Subscription Requests
               </NavLink>
             </>
           )}
