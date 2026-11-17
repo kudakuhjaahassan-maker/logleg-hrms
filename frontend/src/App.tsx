@@ -17,6 +17,33 @@ import CompensationPage from "./pages/CompensationPage";
 import PayslipsAdminPage from "./pages/PayslipsAdminPage";
 import UpgradePage from "./pages/UpgradePage";
 import EmployeeDashboardPage from "./pages/EmployeeDashboardPage";
+import { ErrorBoundary } from "./components/ErrorBoundary";
+
+interface ErrorBoundaryProps {
+  fallback: React.ReactNode;
+}
+
+class ErrorBoundary extends React.Component<ErrorBoundaryProps> {
+  constructor(props: ErrorBoundaryProps) {
+    super(props);
+    this.state = { hasError: false, error: undefined, info: undefined };
+  }
+
+  static getDerivedStateFromError(error: Error) {
+    return { hasError: true, error };
+  }
+
+  componentDidCatch(error: Error, info: React.ErrorInfo) {
+    console.error("App error caught:", error, info);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return this.props.fallback;
+    }
+    return this.props.children;
+  }
+}
 
 function Protected({ children }: { children: React.ReactNode }) {
   const { token, loading, user } = useAuth();
@@ -45,34 +72,35 @@ function AdminOnly({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <Routes>
-      <Route path="/login" element={<LoginPage />} />
-      <Route path="/register" element={<RegisterPage />} />
-      <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-      <Route path="/reset-password" element={<ResetPasswordPage />} />
-      <Route
-        path="/"
-        element={
-          <Protected>
-            <Layout />
-          </Protected>
-        }
-      >
-        <Route index element={<HomeRedirect />} />
-        <Route path="dashboard" element={<AdminOnly><DashboardPage /></AdminOnly>} />
-        <Route path="employee-dashboard" element={<EmployeeDashboardPage />} />
-        <Route path="directory" element={<DirectoryPage />} />
-        <Route path="employees/:id" element={<ProfilePage />} />
-        <Route path="org-chart" element={<OrgChartPage />} />
-        <Route path="leave" element={<LeavePage />} />
-        <Route path="leave-approvals" element={<LeaveApprovalsPage />} />
-        <Route path="attendance" element={<AttendancePage />} />
-        <Route path="compensation" element={<CompensationPage />} />
-        <Route path="payslips" element={<PayslipsAdminPage />} />
-        <Route path="upgrade" element={<UpgradePage />} />
-        <Route path="settings" element={<SettingsPage />} />
-      </Route>
-      <Route path="*" element={<Navigate to="/login" replace />} />
-    </Routes>
+    <ErrorBoundary fallback={<div className="error-fallback">\n        <h2>Application Error</h2>\n        <p>We encountered an unexpected error. The page will reload.\n        <button className="btn btn-primary" onClick={() => window.location.reload()}>Reload</button>\n      </div>}>\n      <Routes>
+        <Route path="/login" element={<LoginPage />} />
+        <Route path="/register" element={<RegisterPage />} />
+        <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+        <Route path="/reset-password" element={<ResetPasswordPage />} />
+        <Route
+          path="/"
+          element={
+            <Protected>
+              <Layout />
+            </Protected>
+          }
+        >
+          <Route index element={<HomeRedirect />} />
+          <Route path="dashboard" element={<AdminOnly><DashboardPage /></AdminOnly>} />
+          <Route path="employee-dashboard" element={<EmployeeDashboardPage />} />
+          <Route path="directory" element={<DirectoryPage />} />
+          <Route path="employees/:id" element={<ProfilePage />} />
+          <Route path="org-chart" element={<OrgChartPage />} />
+          <Route path="leave" element={<LeavePage />} />
+          <Route path="leave-approvals" element={<LeaveApprovalsPage />} />
+          <Route path="attendance" element={<AttendancePage />} />
+          <Route path="compensation" element={<CompensationPage />} />
+          <Route path="payslips" element={<PayslipsAdminPage />} />
+          <Route path="upgrade" element={<UpgradePage />} />
+          <Route path="settings" element={<SettingsPage />} />
+        </Route>
+        <Route path="*" element={<Navigate to="/login" replace />} />
+      </Routes>
+    </ErrorBoundary>
   );
 }

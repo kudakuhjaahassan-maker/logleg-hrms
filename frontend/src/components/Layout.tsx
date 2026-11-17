@@ -3,11 +3,11 @@ import { NavLink, Outlet, useLocation } from "react-router-dom";
 import { useAuth } from "../api/AuthContext";
 
 export default function Layout() {
-  const { user, company, isHrAdmin, logout } = useAuth();
+  const { user, company, isHrAdmin, loading, logout } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
-  const brandName = company?.name || "LOGLEG";
+  const brandName = (!loading && company?.name) || "LOGLEG";
 
   useEffect(() => {
     setMenuOpen(false);
@@ -24,7 +24,11 @@ export default function Layout() {
 
   const navLinks = (
     <>
-      {user?.role === "EMPLOYEE" ? (
+      {loading ? (
+        <>
+          <span className="loading">Loading...</span>
+        </>
+      ) : user?.role === "EMPLOYEE" ? (
         <>
           <NavLink to="/employee-dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
             My Portal
@@ -74,7 +78,7 @@ export default function Layout() {
           )}
         </>
       )}
-      {user && (
+      {(!loading) && user && (
         <NavLink
           to={`/employees/${user.id}`}
           className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}
@@ -82,7 +86,7 @@ export default function Layout() {
           My Profile
         </NavLink>
       )}
-      {isHrAdmin && (
+      {isHrAdmin && (!loading) && (
         <NavLink to="/settings" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
           Settings
         </NavLink>
@@ -110,7 +114,7 @@ export default function Layout() {
         </nav>
 
         <div className="user-area user-area-desktop">
-          {user && (
+          {(!loading) && user && (
             <div className="user-meta">
               <div className="user-name">
                 {user.firstName} {user.lastName}
@@ -140,7 +144,7 @@ export default function Layout() {
         aria-hidden={!menuOpen}
       >
         <div className="mobile-drawer-header">
-          {user && (
+          {(!loading) && user && (
             <div className="mobile-drawer-user">
               <div className="user-name">{user.firstName} {user.lastName}</div>
               <div className="user-role">{user.role}{company?.name ? ` · ${company.name}` : ""}</div>
