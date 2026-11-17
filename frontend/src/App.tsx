@@ -1,3 +1,4 @@
+import React from "react";
 import { Navigate, Route, Routes } from "react-router-dom";
 import { useAuth } from "./api/AuthContext";
 import Layout from "./components/Layout";
@@ -17,19 +18,23 @@ import CompensationPage from "./pages/CompensationPage";
 import PayslipsAdminPage from "./pages/PayslipsAdminPage";
 import UpgradePage from "./pages/UpgradePage";
 import EmployeeDashboardPage from "./pages/EmployeeDashboardPage";
-import { ErrorBoundary } from "./components/ErrorBoundary";
+import ManagementSubscriptionsPage from "./pages/ManagementSubscriptionsPage";
 
-interface ErrorBoundaryProps {
-  fallback: React.ReactNode;
+interface ErrorBoundaryState {
+  hasError: boolean;
+  error?: Error;
 }
 
-class ErrorBoundary extends React.Component<ErrorBoundaryProps> {
-  constructor(props: ErrorBoundaryProps) {
+class AppErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  ErrorBoundaryState
+> {
+  constructor(props: { children: React.ReactNode }) {
     super(props);
-    this.state = { hasError: false, error: undefined, info: undefined };
+    this.state = { hasError: false, error: undefined };
   }
 
-  static getDerivedStateFromError(error: Error) {
+  static getDerivedStateFromError(error: Error): ErrorBoundaryState {
     return { hasError: true, error };
   }
 
@@ -39,40 +44,61 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps> {
 
   render() {
     if (this.state.hasError) {
-      return this.props.fallback;
+      return (
+        <div className="error-fallback" style={{ padding: "2rem", textAlign: "center" }}>
+          <h2>Application Error</h2>
+          <p>We encountered an unexpected error. Please try reloading the page.</p>
+          <button
+            className="btn btn-primary"
+            onClick={() => window.location.reload()}
+            style={{ marginTop: "1rem" }}
+          >
+            Reload
+          </button>
+        </div>
+      );
     }
     return this.props.children;
   }
 }
 
 function Protected({ children }: { children: React.ReactNode }) {
-  const { token, loading, user } = useAuth();
-  // Show loading state while auth initializes — prevents white screen on state mismatch
-  if (loading) return <div className="page-loading">Loading authentication state...</div>;
-  // If no token, redirect to login
-  if (!token) return <Navigate to="/login" replace />;
-  // Default role to EMPLOYEE if undefined — prevents crash from missing role
-  const safeRole = user?.role ?? "EMPLOYEE";
+  const { token, loading } = useAuth();
+  if (loading) {
+    return <div className="page-loading">Loading authentication state...</div>;
+  }
+  if (!token) {
+    return <Navigate to="/login" replace />;
+  }
   return <>{children}</>;
 }
 
 function HomeRedirect() {
-  const { user } = useAuth();
-  // Safe optional chaining — handles undefined role during init
-  if (user?.role === "EMPLOYEE") return <Navigate to="/employee-dashboard" replace />;
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div className="page-loading">Loading...</div>;
+  }
+  if (user?.role === "EMPLOYEE") {
+    return <Navigate to="/employee-dashboard" replace />;
+  }
   return <Navigate to="/dashboard" replace />;
 }
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
-  const { user } = useAuth();
-  // Safe role check with fallback
-  if (user?.role === "EMPLOYEE") return <Navigate to="/employee-dashboard" replace />;
+  const { user, loading } = useAuth();
+  if (loading) {
+    return <div className="page-loading">Loading...</div>;
+  }
+  if (user?.role === "EMPLOYEE") {
+    return <Navigate to="/employee-dashboard" replace />;
+  }
   return <>{children}</>;
 }
 
 export default function App() {
   return (
-    <ErrorBoundary fallback={<div className="error-fallback">\n        <h2>Application Error</h2>\n        <p>We encountered an unexpected error. The page will reload.\n        <button className="btn btn-primary" onClick={() => window.location.reload()}>Reload</button>\n      </div>}>\n      <Routes>
+    <AppErrorBoundary>
+      <Routes>
         <Route path="/login" element={<LoginPage />} />
         <Route path="/register" element={<RegisterPage />} />
         <Route path="/forgot-password" element={<ForgotPasswordPage />} />
@@ -97,10 +123,11 @@ export default function App() {
           <Route path="compensation" element={<CompensationPage />} />
           <Route path="payslips" element={<PayslipsAdminPage />} />
           <Route path="upgrade" element={<UpgradePage />} />
+          <Route path="management/subscriptions" element={<AdminOnly><ManagementSubscriptionsPage /></AdminOnly>} />
           <Route path="settings" element={<SettingsPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/login" replace />} />
       </Routes>
-    </ErrorBoundary>
+    </AppErrorBoundary>
   );
 }

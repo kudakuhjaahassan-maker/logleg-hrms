@@ -1,83 +1,82 @@
-import React from "react";
+import { useEffect, useState } from "react";
+import { Navigate } from "react-router-dom";
 import { useAuth } from "../api/AuthContext";
 import { api } from "../api/client";
-import { Table, TableHeader, TableRow, TableCell, Badge } from "../components/Table";
 
-interface PendingSubscriptionRequest {
+interface PendingRequest {
   id: string;
   email: string;
-  tier: "starter" | "growth" | "enterprise";
-  status: "pending" | "approved" | "rejected";
-  createdAt: Date;
-}
-
-interface TableColumn {
-  accessorKey: keyof PendingSubscriptionRequest;
-  header: string;
-  size?: string;
+  tier: string;
+  status: string;
+  createdAt?: string;
 }
 
 export default function ManagementSubscriptionsPage() {
-  const { company, user, isHrAdmin, isSuperAdmin } = useAuth();
+  const { user, loading } = useAuth();
+  const [requests, setRequests] = useState<PendingRequest[]>([]);
+  const [fetching, setFetching] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  if (!isHrAdmin && !isSuperAdmin) {
-    return null; // or <Navigate to="/dashboard" replace />;
+  const isAdmin = user?.role === "HR_ADMIN" || user?.role === "SUPER_ADMIN";
+
+  useEffect(() => {
+    if (loading || !isAdmin) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const data = await api.subscriptionsListPending();
+        if (!cancelled) {
+          setRequests(Array.isArray(data?.requests) ? data.requests : []);
+        }
+      } catch (err: any) {
+        if (!cancelled) setError(err?.message || "Failed to load pending subscriptions");
+      } finally {
+        if (!cancelled) setFetching(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [loading, isAdmin]);
+
+  if (loading) {
+    return <div className="page-loading">Loading...</div>;
   }
 
-  const [requests, setRequests] = React.useState<PendingSubscriptionRequest[]>([]);
-  const [loading, setLoading] = React.useState(true);
-
-  React.useEffect(() => {
-    loadRequests();
-  }, []);
-
-  const loadRequests = async () => {
-    try {
-      const data = await api.subscriptionsListPending();
-      setRequests(data.requests);
-    } catch (err: any) {
-      console.error("Failed to load pending subscriptions:", err);
-    } finally {
-      setLoading(false);
-    }
-  };
+  if (!isAdmin) {
+    return <Navigate to="/dashboard" replace />;
+  }
 
   const handleApprove = async (requestId: string) => {
     try {
       await api.subscriptionsApprove(requestId);
-      loadRequests();
+      setRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (err: any) {
-      console.error("Failed to approve subscription:", err);
+      setError(err?.message || "Failed to approve subscription");
     }
   };
 
   const handleReject = async (requestId: string) => {
     try {
       await api.subscriptionsReject(requestId);
-      loadRequests();
+      setRequests((prev) => prev.filter((r) => r.id !== requestId));
     } catch (err: any) {
-      console.error("Failed to reject subscription:", err);
+      setError(err?.message || "Failed to reject subscription");
     }
   };
 
-  if (loading) {
-    return (
-      <div className="page">
-        <div className="empty">Loading pending subscription requests...</div>
-      </div>
-    );
-  }
-
-  if (requests.length === 0) {
-    return (
-      <div className="page">
-        <div className="empty">
-          <h3>No pending subscription requests</h3>
-          <p>There are currently no pending subscription requests for this company.</p>
-        </div>
-      </div>
-    );
-  }
+  const tierLabel = (tier: string) => {
+    switch (tier) {
+      case "starter":
+        return "Starter / Small Business";
+      case "growth":
+        return "Growth / Pro Tier";
+      case "enterprise":
+        return "Enterprise Tier";
+      default:
+        return tier || "Unknown";
+    }
+  };
 
   return (
     <div className="page">
@@ -90,63 +89,60 @@ export default function ManagementSubscriptionsPage() {
         </div>
       </div>
 
-      <div className="table-responsive">
-        <Table>
-          <TableHeader>
-            <TableRow>
-              <TableCell>Email</TableCell>
-              <TableCell>Requested Tier</TableCell>
-              <TableCell>Status</TableCell>
-              <TableCell style={{ width: "140px" }}>Actions</TableCell>
-            </TableRow>
-          </TableHeader>
-          {requests.map((req) => (
-            <Table key={req.id} row>
-              <TableRow>
-                <TableCell>{req.email}</TableCell>
-                <TableCell>
-                  {req.tier.charAt(0).toUpperCase() + req.tier.slice(1)} /
-                  {req.tier === "starter"
-                    ? "Starter / Small Business"
-                    : req.tier === "growth"
-                    ? "Growth / Pro Tier"
-                    : "Enterprise Tier"}
-                </TableCell>
-                <TableCell>
-                  <Badge
-                    status={req.status}
-                    variant={
-                      req.status === "pending"
-                        ? "outline"
-                        : req.status === "approved"
-                        ? "success"
-                        : "destructive"
-                    }
-                  >
-                    {req.status.charAt(0).toUpperCase() + req.status.slice(1)}
-                  </Badge>
-                </TableCell>
-                <TableCell>
-                  <button
-                    onClick={() => handleApprove(req.id)}
-                    className="btn btn-sm btn-primary"
-                    disabled={req.status !== "pending"}
-                  >
-                    Approve / Unlock Tier
-                  </button>
-                  <button
-                    onClick={() => handleReject(req.id)}
-                    className="btn btn-sm btn-secondary"
-                    disabled={req.status !== "pending"}
-                  >
-                    Reject
-                  </button>
-                </TableCell>
-              </TableRow>
-            </Table>
-          ))}
-        </Table>
-      </div>
+      {error && <div className="alert error">{error}</div>}
+
+      {fetching ? (
+        <div className="empty">Loading pending subscription requests...</div>
+      ) : requests.length === 0 ? (
+        <div className="empty">
+          <h3>No pending subscription requests</h3>
+          <p>There are currently no pending subscription requests for this company.</p>
+        </div>
+      ) : (
+        <div className="table-responsive">
+          <table className="table">
+            <thead>
+              <tr>
+                <th>Email</th>
+                <th>Requested Tier</th>
+                <th>Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {requests.map((req) => (
+                <tr key={req.id}>
+                  <td>{req.email}</td>
+                  <td>{tierLabel(req.tier)}</td>
+                  <td>
+                    <span className={`badge badge-${req.status === "approved" ? "success" : req.status === "rejected" ? "danger" : "warning"}`}>
+                      {req.status ? req.status.charAt(0).toUpperCase() + req.status.slice(1) : "Pending"}
+                    </span>
+                  </td>
+                  <td>
+                    <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                      <button
+                        onClick={() => handleApprove(req.id)}
+                        className="btn btn-sm btn-primary"
+                        disabled={req.status !== "pending"}
+                      >
+                        Approve / Unlock Tier
+                      </button>
+                      <button
+                        onClick={() => handleReject(req.id)}
+                        className="btn btn-sm btn-secondary"
+                        disabled={req.status !== "pending"}
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
     </div>
   );
 }

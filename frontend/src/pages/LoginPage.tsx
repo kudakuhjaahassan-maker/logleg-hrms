@@ -5,7 +5,6 @@ import PasswordField from "../components/PasswordField";
 
 function homeForRole(role?: string) {
   if (role === "EMPLOYEE") return "/employee-dashboard";
-  // HR_ADMIN, SUPER_ADMIN, MANAGER (and any admin roles) go to the main company dashboard
   return "/dashboard";
 }
 
@@ -68,28 +67,34 @@ const features = [
 ];
 
 export default function LoginPage() {
-  const { token, user, login } = useAuth();
+  const { token, user, loading, login } = useAuth();
   const navigate = useNavigate();
   const [mode, setMode] = useState<"admin" | "employee">("admin");
   const [companySlug, setCompanySlug] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
-  const [loading, setLoading] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
 
-  if (token) return <Navigate to={homeForRole(user?.role)} replace />;
+  if (loading) {
+    return <div className="page-loading">Loading authentication state...</div>;
+  }
+
+  if (token) {
+    return <Navigate to={homeForRole(user?.role)} replace />;
+  }
 
   const onSubmit = async (e: FormEvent) => {
     e.preventDefault();
     setError(null);
-    setLoading(true);
+    setSubmitting(true);
     try {
       const signedIn = await login(email, password, companySlug);
-      navigate(homeForRole(signedIn.role), { replace: true });
+      navigate(homeForRole(signedIn?.role), { replace: true });
     } catch (err: any) {
       setError(err?.message || "Login failed");
     } finally {
-      setLoading(false);
+      setSubmitting(false);
     }
   };
 
@@ -193,8 +198,8 @@ export default function LoginPage() {
                 <Link to="/forgot-password">Forgot password?</Link>
               </div>
               {error && <div className="alert error">{error}</div>}
-              <button className="btn btn-primary btn-block login-submit" type="submit" disabled={loading}>
-                {loading ? "Signing in..." : mode === "employee" ? "Sign in as employee" : "Sign in"}
+              <button className="btn btn-primary btn-block login-submit" type="submit" disabled={submitting}>
+                {submitting ? "Signing in..." : mode === "employee" ? "Sign in as employee" : "Sign in"}
               </button>
             </form>
             <p className="hint">
