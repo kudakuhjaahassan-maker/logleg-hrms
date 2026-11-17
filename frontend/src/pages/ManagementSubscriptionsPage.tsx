@@ -17,7 +17,7 @@ export default function ManagementSubscriptionsPage() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = user?.role === "HR_ADMIN" || user?.role === "SUPER_ADMIN";
+  const isAdmin = user?.role === "SUPER_ADMIN";
 
   useEffect(() => {
     if (loading || !isAdmin) return;

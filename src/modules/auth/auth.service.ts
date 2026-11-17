@@ -52,7 +52,10 @@ export async function registerCompany(input: RegisterCompanyInput) {
       },
     });
 
-    // Bootstrap the tenant with an HR admin who can manage the company.
+    // Bootstrap the tenant with an employee admin (role=EMPLOYEE).
+    // The company admin can be promoted to HR_ADMIN later via the admin panel.
+    // Never default to HR_ADMIN or SUPER_ADMIN to prevent newly created companies
+    // from accessing global management routes.
     const adminUser = await tx.user.create({
       data: {
         companyId: company.id,
@@ -61,7 +64,7 @@ export async function registerCompany(input: RegisterCompanyInput) {
         firstName: input.admin.firstName,
         lastName: input.admin.lastName,
         phone: input.admin.phone,
-        role: UserRole.HR_ADMIN,
+        role: UserRole.EMPLOYEE,
         status: EmployeeStatus.ACTIVE,
       },
     });

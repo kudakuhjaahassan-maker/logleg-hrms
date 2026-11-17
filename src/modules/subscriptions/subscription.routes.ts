@@ -23,10 +23,11 @@ router.post(
   )
 );
 
-// GET /api/subscriptions/pending - List all pending requests for a company (management dashboard)
+// GET /api/subscriptions/pending - List all pending requests
 router.get(
   "/pending",
   authenticate,
+  authorize("SUPER_ADMIN"),
   asyncHandler(
     async (req: import("express").Request, res: import("express").Response) => {
       const companyId: string = (req as any).auth?.companyId || "";
