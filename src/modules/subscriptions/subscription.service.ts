@@ -16,10 +16,11 @@ export interface CreatePendingSubscriptionInput {
   userId: string;
   email: string;
   tier: SubscriptionPlan;
+  companyId: string;
 }
 
 export async function createPendingSubscription(input: CreatePendingSubscriptionInput): Promise<PendingSubscriptionRequest> {
-  const { userId, email, tier } = input;
+  const { userId, email, tier, companyId } = input;
 
   const request = await prisma.pendingSubscriptionRequest.create({
     data: {
@@ -27,6 +28,7 @@ export async function createPendingSubscription(input: CreatePendingSubscription
       email,
       tier,
       status: "pending",
+      companyId,
     },
     include: {
       company: {
@@ -102,9 +104,6 @@ export async function approvePendingSubscription(requestId: string, companyId: s
     data: {
       subscriptionPlan: plan,
       subscriptionStatus: "ACTIVE",
-    },
-    include: {
-      settings: true,
     },
   });
 

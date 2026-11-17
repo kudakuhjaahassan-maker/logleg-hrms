@@ -1,5 +1,7 @@
 import type { Request, Response } from "express";
 import { ZodError } from "zod";
+import { forgotPasswordSchema, loginSchema, registerCompanySchema, resetPasswordSchema, updateMyAccountSchema } from "./auth.schema";
+import * as authService from "./auth.service";
 import { HttpError } from "../../utils/http";
 import { sendMail } from "../../lib/mailer";
 
