@@ -1,4 +1,4 @@
-import { Prisma, type EmployeeStatus, type UserRole } from "@prisma/client";
+import { Prisma, EmployeeStatus, UserRole } from "@prisma/client";
 import prisma from "../../lib/prisma";
 import { HttpError } from "../../utils/http";
 import { hashPassword } from "../../utils/password";
@@ -255,6 +255,7 @@ export async function createEmployee(companyId: string, input: CreateEmployeeInp
 }
 
 export async function updateEmployee(
+  req: import("express").Request,
   companyId: string,
   employeeId: string,
   input: UpdateEmployeeInput,
@@ -274,7 +275,19 @@ export async function updateEmployee(
   if (input.firstName !== undefined) data.firstName = input.firstName;
   if (input.lastName !== undefined) data.lastName = input.lastName;
   if (input.title !== undefined) data.title = input.title;
-  if (input.role !== undefined) data.role = input.role;
+  if (input.role !== undefined) {
+    // SUPER_ADMIN can only be set by SUPER_ADMIN; company admins/HRA can only set up to HR_ADMIN
+    const roleToSet = input.role as UserRole;
+    const viewerRole = (req as any).auth?.role;
+    if (roleToSet === UserRole.SUPER_ADMIN && (!viewerRole || viewerRole !== UserRole.SUPER_ADMIN)) {
+      throw new HttpError(403, "SUPER_ADMIN role can only be set by SUPER_ADMIN");
+    }
+    if (roleToSet === UserRole.SUPER_ADMIN && viewerRole === UserRole.HR_ADMIN) {
+      // HR_ADMIN may upgrade themselves to SUPER_ADMIN only via seed/scripts; block here.
+      throw new HttpError(403, "SUPER_ADMIN role can only be set by SUPER_ADMIN");
+    }
+    data.role = roleToSet;
+  }
   if (input.departmentId !== undefined) {
     data.department = input.departmentId
       ? { connect: { id: input.departmentId } }

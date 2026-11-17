@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Navigate } from "react-router-dom";
+import { Navigate, Use } from "react-router-dom";
 import { useAuth } from "../api/AuthContext";
 import { api } from "../api/client";
 
@@ -11,16 +11,41 @@ interface PendingRequest {
   createdAt?: string;
 }
 
+// Access Denied component for non-SUPER_ADMIN users
+function AccessDenied() {
+  return (
+    <div className="page">
+      <div className="page-header">
+        <div>
+          <h2>Access Denied</h2>
+          <p>Only SUPER_ADMIN can view or manage pending subscription requests.</p>
+        </div>
+      </div>
+      <div className="empty" style={{ textAlign: "center", padding: "2rem" }}>
+        <button
+          onClick={() => window.history.back()}
+          className="btn btn-primary"
+          style={{ marginTop: "1rem" }}
+        >
+          Return to Dashboard
+        </button>
+      </div>
+    </div>
+  );
+}
+
 export default function ManagementSubscriptionsPage() {
   const { user, loading } = useAuth();
   const [requests, setRequests] = useState<PendingRequest[]>([]);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const isAdmin = user?.role === "SUPER_ADMIN";
+  // Only SUPER_ADMIN can access this page; redirect all others gracefully
+  if (!user || user.role !== "SUPER_ADMIN") {
+    return <AccessDenied />;
+  }
 
   useEffect(() => {
-    if (loading || !isAdmin) return;
     let cancelled = false;
     (async () => {
       try {
@@ -29,6 +54,7 @@ export default function ManagementSubscriptionsPage() {
           setRequests(Array.isArray(data?.requests) ? data.requests : []);
         }
       } catch (err: any) {
+        // Prevent API errors from crashing the page / AppErrorBoundary
         if (!cancelled) setError(err?.message || "Failed to load pending subscriptions");
       } finally {
         if (!cancelled) setFetching(false);
@@ -37,14 +63,30 @@ export default function ManagementSubscriptionsPage() {
     return () => {
       cancelled = true;
     };
-  }, [loading, isAdmin]);
+  }, []);
 
   if (loading) {
     return <div className="page-loading">Loading...</div>;
   }
 
-  if (!isAdmin) {
-    return <Navigate to="/dashboard" replace />;
+  // Error state: show error message instead of crashing
+  if (error) {
+    return (
+      <div className="page">
+        <div className="page-header">
+          <div>
+            <h2>Pending Subscription Requests</h2>
+            <p className="muted">
+              View and manage subscription tier upgrade requests awaiting payment verification.
+            </p>
+          </div>
+        </div>
+        <div className="alert error" style={{ margin: "1rem 0" }}>{error}</div>
+        <div className="empty" style={{ textAlign: "center" }}>
+          <p>Failed to load data. Please try again.</p>
+        </div>
+      </div>
+    );
   }
 
   const handleApprove = async (requestId: string) => {
@@ -89,7 +131,7 @@ export default function ManagementSubscriptionsPage() {
         </div>
       </div>
 
-      {error && <div className="alert error">{error}</div>}
+      {error && <div className="alert error" style={{ margin: "1rem 0" }}>{error}</div>}
 
       {fetching ? (
         <div className="empty">Loading pending subscription requests...</div>

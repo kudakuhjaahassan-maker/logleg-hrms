@@ -41,6 +41,7 @@ export async function create(req: Request, res: Response) {
 export async function update(req: Request, res: Response) {
   const input = parse(updateEmployeeSchema, req.body);
   const employee = await employeeService.updateEmployee(
+    req,
     req.auth!.companyId,
     String(req.params.id),
     input,
