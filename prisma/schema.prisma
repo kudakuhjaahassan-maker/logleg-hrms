@@ -116,6 +116,7 @@ model Company {
   leaveRequests  LeaveRequest[]
   attendanceLogs AttendanceLog[]
   payrollRecords PayrollRecord[]
+  pendingSubscriptions PendingSubscriptionRequest[] @relation("PendingSubscriptionRequest")
 
   @@index([name])
   @@map("companies")
@@ -206,6 +207,7 @@ model User {
   @@index([companyId, role])
   @@index([departmentId])
   @@index([managerId])
+  pendingSubscriptions PendingSubscriptionRequest[] @relation("PendingSubscriptionRequest")
   @@map("users")
 }
 
