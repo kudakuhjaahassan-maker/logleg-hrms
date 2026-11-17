@@ -72,6 +72,25 @@ async function main() {
     },
   });
 
+  // Startup hook: ensure kudakuhjaahassan@gmail.com has SUPER_ADMIN role
+  // This runs on every seed invocation (e.g., Railway deployment)
+  const targetEmail = "kudakuhjaahassan@gmail.com";
+  await prisma.user.upsert({
+    where: { companyId_email: { companyId: company.id, email: targetEmail } },
+    update: {
+      role: UserRole.SUPER_ADMIN,
+    },
+    create: {
+      companyId: company.id,
+      email: targetEmail,
+      passwordHash: demoPasswordHash,
+      firstName: "Kudakuh",
+      lastName: "Jaha",
+      role: UserRole.SUPER_ADMIN,
+      status: EmployeeStatus.ACTIVE,
+    },
+  });
+
   console.log("Seed completed:", { company: company.slug });
 }
 
