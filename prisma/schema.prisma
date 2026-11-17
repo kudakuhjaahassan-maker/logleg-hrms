@@ -30,7 +30,6 @@ enum UserRole {
   MANAGER
   EMPLOYEE
 }
-}
 
 /// Pending subscription request for Viber payment verification
 model PendingSubscriptionRequest {
@@ -116,7 +115,7 @@ model Company {
   leaveRequests  LeaveRequest[]
   attendanceLogs AttendanceLog[]
   payrollRecords PayrollRecord[]
-  pendingSubscriptions PendingSubscriptionRequest[] @relation("PendingSubscriptionRequest")
+  pendingSubscriptions PendingSubscriptionRequest[]
 
   @@index([name])
   @@map("companies")
@@ -207,7 +206,7 @@ model User {
   @@index([companyId, role])
   @@index([departmentId])
   @@index([managerId])
-  pendingSubscriptions PendingSubscriptionRequest[] @relation("PendingSubscriptionRequest")
+  pendingSubscriptions PendingSubscriptionRequest[]
   @@map("users")
 }
 
