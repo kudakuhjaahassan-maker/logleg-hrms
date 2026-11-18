@@ -28,6 +28,8 @@
   --text-dark: #0f172a;
   --text-muted: #64748b;
   --muted: #64748b;
+  --text-main: #0f172a;
+  --text-subtle: #64748b;
   --text-on-primary: #ffffff;
   --bg: #f4f7fb;
   --bg-dark: #0f172a;
@@ -62,6 +64,8 @@
     --text: #f8fafc;
     --text-muted: #94a3b8;
     --muted: #94a3b8;
+    --text-main: #f8fafc;
+    --text-subtle: #94a3b8;
     --border: #334155;
     --border-glass: rgba(148, 163, 182, 0.40);
     --header-bg: #0f172a;
@@ -1418,6 +1422,19 @@ textarea:focus {
 }
 
 /* Company branding settings */
+.settings-page {
+  /* Settings stays on neutral surfaces so a bright brand tint never washes out text. */
+  --settings-surface: #ffffff;
+  --card-bg: #ffffff;
+  --border: #e2e8f0;
+  --muted: #64748b;
+  --text: #0f172a;
+  --text-main: #0f172a;
+  --text-subtle: #64748b;
+  color-scheme: light;
+  color: #0f172a;
+}
+
 .grid-settings {
   display: grid;
   grid-template-columns: 1.05fr 0.95fr;
@@ -1468,7 +1485,7 @@ textarea:focus {
   border: 1px dashed var(--border);
   border-radius: var(--radius);
   padding: 14px;
-  background: #f8fafc;
+  background: var(--settings-surface, #f8fafc);
   display: flex;
   flex-direction: column;
   gap: 14px;
@@ -1506,7 +1523,8 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 12px;
-  background: var(--card-bg);
+  background: var(--settings-surface, var(--card-bg));
+  color: var(--text-main, var(--text));
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px;
@@ -1691,7 +1709,8 @@ textarea:focus {
   border: 1px solid var(--border);
   border-radius: 8px;
   overflow: hidden;
-  background: var(--card-bg);
+  background: var(--settings-surface, var(--card-bg));
+  color: var(--text-main, var(--text));
 }
 
 .brand-preview-row {
@@ -1719,6 +1738,27 @@ textarea:focus {
   place-items: center;
   font-size: 11px;
   font-weight: 700;
+}
+
+/* Dark palette for the neutral settings surfaces */
+@media (prefers-color-scheme: dark) {
+  .settings-page {
+    --settings-surface: #0f172a;
+    --card-bg: #0f172a;
+    --border: #334155;
+    --muted: #94a3b8;
+    --text: #f8fafc;
+    --text-main: #f8fafc;
+    --text-subtle: #94a3b8;
+    color-scheme: dark;
+    color: #f8fafc;
+  }
+  .settings-page .theme-option,
+  .settings-page .preset-swatch,
+  .settings-page .color-input {
+    background: #0f172a;
+    border-color: #334155;
+  }
 }
 
 /* Dashboard Specific */
@@ -1909,7 +1949,7 @@ textarea:focus {
 
 .quick-link span {
   font-size: 13px;
-  color: var(--header-text, var(--text));
+  color: var(--text);
 }
 
 .quick-link-icon {

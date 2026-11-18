@@ -16,6 +16,10 @@ export type BrandTokens = {
   lightBg: string;
   textOnPrimary: "#FFFFFF" | "#111827";
   contrastRatio: number;
+  /** Body text colour for surfaces filled with the brand colour. */
+  mainText: "#ffffff" | "#0f172a";
+  /** Secondary/helper text colour for surfaces filled with the brand colour. */
+  mutedText: string;
 };
 
 function expandHex(hex: string): string {
@@ -85,17 +89,32 @@ export function textColorFor(primaryColor: string): "#FFFFFF" | "#111827" {
   return white >= dark ? "#FFFFFF" : "#111827";
 }
 
+/** Picks a legible body + helper text pair for any background.
+ * Bright backgrounds (light greens, yellows, white tints) get slate text;
+ * dark backgrounds keep light text.
+ */
+export function readableTextFor(background: string): { main: "#ffffff" | "#0f172a"; muted: string } {
+  const bg = normalizeHexColor(background) ?? DEFAULT_CARD_BG;
+  const preferDark = contrastRatio(bg, "#0f172a") >= contrastRatio(bg, "#ffffff");
+  return preferDark
+    ? { main: "#0f172a", muted: "rgba(15, 23, 42, 0.72)" }
+    : { main: "#ffffff", muted: "rgba(255, 255, 255, 0.78)" };
+}
+
 export function brandTokens(primaryColor?: string | null): BrandTokens {
   const primary = normalizeHexColor(primaryColor ?? "") ?? DEFAULT_PRIMARY;
   const hover = mix(primary, "#000000", 0.12);
   const { r, g, b } = hexToRgb(primary);
   const textOnPrimary = textColorFor(primary);
+  const readable = readableTextFor(primary);
   return {
     primary,
     hover,
     lightBg: `rgba(${r}, ${g}, ${b}, 0.10)`,
     textOnPrimary,
     contrastRatio: contrastRatio(primary, textOnPrimary),
+    mainText: readable.main,
+    mutedText: readable.muted,
   };
 }
 
@@ -117,6 +136,9 @@ export function applyBranding(
   root.setProperty("--primary-hover", tokens.hover);
   root.setProperty("--primary-light-bg", tokens.lightBg);
   root.setProperty("--text-on-primary", tokens.textOnPrimary);
+  // Contrast-safe body text for anything painted with the brand colour.
+  root.setProperty("--text-main", tokens.mainText);
+  root.setProperty("--text-subtle", tokens.mutedText);
   // Legacy variable names used across the existing stylesheet.
   root.setProperty("--primary", tokens.primary);
   root.setProperty("--primary-dark", tokens.hover);
@@ -177,11 +199,15 @@ export function workspaceTokens(
   const headingTextColor = normalizeHexColor(headingColor ?? "") ?? "#0f172a";
   const subTextColor = normalizeHexColor(subColor ?? "") ?? "#64748b";
   const headerBg = theme === "brand" ? tokens.primary : theme === "dark" ? "#1e293b" : "#f8f9fa";
-  const headerText = "#ffffff";
-  const headerMuted = theme === "brand" ? "rgba(255, 255, 255, 0.7)" : "#64748b";
-  const headerBorder = theme === "brand" ? "rgba(255, 255, 255, 0.3)" : "#e2e8f0";
+  // Derive header text from the actual header colour so a bright brand colour
+  // (light green, yellow, white tint) gets slate text instead of invisible white.
+  const headerPalette = readableTextFor(headerBg);
   const headerActiveBg = theme === "brand" ? tokens.hover : theme === "dark" ? "#2d3748" : "#f1f5f9";
-  const headerActiveText = "#ffffff";
+  const activePalette = readableTextFor(headerActiveBg);
+  const headerText = headerPalette.main;
+  const headerMuted = theme === "light" ? "#64748b" : headerPalette.muted;
+  const headerBorder = headerPalette.main === "#0f172a" ? "#e2e8f0" : "rgba(255, 255, 255, 0.3)";
+  const headerActiveText = theme === "light" ? tokens.hover : activePalette.main;
   const headerControlBg = "#ffffff";
   const headerControlText = "#1e293b";
   const headerControlBorder = "#e2e8f0";

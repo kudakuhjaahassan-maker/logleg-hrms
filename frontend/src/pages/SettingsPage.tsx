@@ -219,7 +219,7 @@ export default function SettingsPage() {
   }, [company?.defaultCurrency, company?.standardWorkHours, company?.overtimeMultiplier, company?.timezone, company?.officeLatitude, company?.officeLongitude, company?.allowedRadiusMeters]);
 
   return (
-    <div className="page">
+    <div className="page settings-page">
       <div className="page-header">
         <div>
           <h1>Company Settings</h1>
