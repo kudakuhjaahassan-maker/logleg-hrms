@@ -44,6 +44,19 @@ router.post(
   )
 );
 
+// GET /api/subscriptions/my-status - The caller company's open tier request (if any)
+router.get(
+  "/my-status",
+  authenticate,
+  asyncHandler(
+    async (req: import("express").Request, res: import("express").Response) => {
+      const companyId: string = (req as any).auth?.companyId || "";
+      const request = await subscriptionService.getMyPendingSubscription(companyId);
+      res.json({ request });
+    }
+  )
+);
+
 // GET /api/subscriptions/pending - List all pending requests
 router.get(
   "/pending",
@@ -66,8 +79,7 @@ router.post(
   asyncHandler(
     async (req: import("express").Request, res: import("express").Response) => {
       const requestId: string = (req as any).body?.requestId;
-      const companyId: string = (req as any).auth?.companyId || "";
-      const result = await subscriptionService.approvePendingSubscription(requestId, companyId);
+      const result = await subscriptionService.approvePendingSubscription(requestId);
       res.json(result);
     }
   )

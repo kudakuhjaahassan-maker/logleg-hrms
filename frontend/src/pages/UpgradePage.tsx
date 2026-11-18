@@ -1,7 +1,7 @@
 import React from "react";
 import { Link } from "react-router-dom";
 import { useAuth } from "../api/AuthContext";
-import { api } from "../api/client";
+import { api, type PendingSubscriptionInfo } from "../api/client";
 
 type TierId = "starter" | "growth" | "enterprise";
 
@@ -51,25 +51,37 @@ const textColors: Record<TierId, string> = {
 
 const priceFor = (tier: TierId) => TIERS.find((t) => t.tier === tier)?.price ?? "";
 
+const tierTitle = (tier?: string | null) => {
+  const match = TIERS.find((t) => t.tier === String(tier ?? "").toLowerCase());
+  return match?.title ?? (tier || "Selected plan");
+};
+
 interface TierCardProps {
   definition: TierDefinition;
   selected: boolean;
+  disabled?: boolean;
   onSelect: () => void;
 }
 
-function TierCard({ definition, selected, onSelect }: TierCardProps) {
+function TierCard({ definition, selected, disabled = false, onSelect }: TierCardProps) {
   const { tier, title, description, price, employees } = definition;
+  const handleSelect = () => {
+    if (disabled) return;
+    onSelect();
+  };
   return (
     <div
       className={`tier-card${selected ? " tier-card-selected" : ""}`}
       role="button"
-      tabIndex={0}
+      tabIndex={disabled ? -1 : 0}
       aria-pressed={selected}
-      onClick={onSelect}
+      aria-disabled={disabled}
+      onClick={handleSelect}
       onKeyDown={(event) => {
+        if (disabled) return;
         if (event.key === "Enter" || event.key === " ") {
           event.preventDefault();
-          onSelect();
+          handleSelect();
         }
       }}
       style={{
@@ -79,7 +91,8 @@ function TierCard({ definition, selected, onSelect }: TierCardProps) {
         padding: "24px",
         marginBottom: "16px",
         color: "#1f2937",
-        cursor: "pointer",
+        cursor: disabled ? "not-allowed" : "pointer",
+        opacity: disabled ? 0.55 : 1,
         transition: "all 0.2s ease",
         boxShadow: selected
           ? "0 0 0 3px rgba(22, 163, 74, 0.35), 0 10px 15px -3px rgba(0, 0, 0, 0.15)"
@@ -130,9 +143,29 @@ export default function UpgradePage() {
   const [submitting, setSubmitting] = React.useState(false);
   const [submitError, setSubmitError] = React.useState<string | null>(null);
   const [submittedTier, setSubmittedTier] = React.useState<TierId | null>(null);
+  const [pendingRequest, setPendingRequest] = React.useState<PendingSubscriptionInfo | null>(null);
+  const [statusLoading, setStatusLoading] = React.useState(true);
 
   const currentPlan = (company?.subscriptionPlan ?? user?.company?.subscriptionPlan ?? "FREE").toUpperCase();
   const accountEmail = user?.email ?? "";
+  const isLocked = pendingRequest !== null;
+
+  const loadStatus = React.useCallback(async () => {
+    try {
+      const data = await api.subscriptionsMyStatus();
+      setPendingRequest(data?.request ?? null);
+    } catch {
+      // A failed status lookup must not lock the page or crash it; the server
+      // still rejects duplicate submissions with a 400.
+      setPendingRequest(null);
+    } finally {
+      setStatusLoading(false);
+    }
+  }, []);
+
+  React.useEffect(() => {
+    loadStatus();
+  }, [loadStatus]);
 
   const handleSlipChange = (file: File | null) => {
     setSubmitError(null);
@@ -153,7 +186,7 @@ export default function UpgradePage() {
 
   const handleSubmitPayment = async (event: React.FormEvent) => {
     event.preventDefault();
-    if (!selectedTier) return;
+    if (!selectedTier || isLocked) return;
     if (!proofUrl && !referenceId.trim()) {
       setSubmitError("Attach a payment slip or enter the bank transaction reference.");
       return;
@@ -172,6 +205,7 @@ export default function UpgradePage() {
       setProofUrl("");
       setSlipName("");
       setReferenceId("");
+      await loadStatus();
     } catch (err: any) {
       setSubmitError(err?.message || "Failed to submit payment. Please try again.");
     } finally {
@@ -216,7 +250,7 @@ export default function UpgradePage() {
             Return to Dashboard
           </Link>
           <button type="button" className="btn btn-secondary" onClick={() => setSubmittedTier(null)}>
-            Submit another request
+            View request status
           </button>
         </div>
       </div>
@@ -239,13 +273,100 @@ export default function UpgradePage() {
         {accountEmail ? ` · Billing contact: ${accountEmail}` : ""}
       </p>
 
+      {statusLoading ? (
+        <p className="muted">Checking your subscription request status...</p>
+      ) : null}
+
+      {/* Pending lock: one open request per company blocks any further plan change. */}
+      {isLocked && (
+        <div
+          role="alert"
+          style={{
+            padding: "20px",
+            marginBottom: "24px",
+            background: "#fffbeb",
+            border: "2px solid #f59e0b",
+            borderRadius: "12px",
+            color: "#78350f",
+          }}
+        >
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "8px",
+              flexWrap: "wrap",
+              marginBottom: "8px",
+            }}
+          >
+            <strong style={{ fontSize: "16px" }}>Subscription request pending</strong>
+            <span
+              style={{
+                background: "#f59e0b",
+                color: "#ffffff",
+                fontSize: "12px",
+                fontWeight: 700,
+                padding: "2px 10px",
+                borderRadius: "999px",
+              }}
+            >
+              Status: Awaiting Review
+            </span>
+          </div>
+          <p style={{ margin: "0 0 8px 0" }}>
+            Your subscription request for{" "}
+            <strong>{tierTitle(pendingRequest?.tier)}</strong> is currently pending Super Admin approval.
+          </p>
+          <p style={{ margin: "0 0 8px 0", fontSize: "14px" }}>
+            You cannot submit another plan change until this request is reviewed. Submitted on{" "}
+            {pendingRequest?.createdAt ? new Date(pendingRequest.createdAt).toLocaleString() : "record not dated"}.
+          </p>
+          {pendingRequest?.referenceId && (
+            <p style={{ margin: "0 0 8px 0", fontSize: "14px" }}>
+              <strong>Transaction reference:</strong> {pendingRequest.referenceId}
+            </p>
+          )}
+          {pendingRequest?.proofUrl && (
+            <div style={{ marginTop: "8px", fontSize: "14px" }}>
+              <p style={{ margin: "0 0 6px 0" }}>
+                <strong>Submitted payment slip:</strong>
+              </p>
+              {pendingRequest.proofUrl.startsWith("data:image") ? (
+                <img
+                  src={pendingRequest.proofUrl}
+                  alt="Submitted payment slip"
+                  style={{
+                    maxWidth: "260px",
+                    width: "100%",
+                    border: "1px solid #f59e0b",
+                    borderRadius: "8px",
+                    background: "#ffffff",
+                  }}
+                />
+              ) : (
+                <a
+                  href={pendingRequest.proofUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="btn btn-secondary btn-sm"
+                >
+                  View submitted slip
+                </a>
+              )}
+            </div>
+          )}
+        </div>
+      )}
+
       <div className="tier-grid">
         {TIERS.map((definition) => (
           <TierCard
             key={definition.tier}
             definition={definition}
             selected={selectedTier === definition.tier}
+            disabled={isLocked}
             onSelect={() => {
+              if (isLocked) return;
               setSelectedTier(definition.tier);
               setSubmitError(null);
             }}
@@ -253,9 +374,12 @@ export default function UpgradePage() {
         ))}
       </div>
 
-      {/* Progressive disclosure: payment details and the proof form stay hidden
-          until a tier has been explicitly selected. */}
-      {selectedTier ? (
+      {isLocked ? (
+        <p className="muted" style={{ marginTop: "24px" }}>
+          Plan changes are locked while a request is awaiting review.{" "}
+          <Link to="/dashboard">Return to Dashboard</Link>
+        </p>
+      ) : selectedTier ? (
         <>
           <div
             className="bml-details"

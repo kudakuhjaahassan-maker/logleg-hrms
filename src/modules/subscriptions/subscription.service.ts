@@ -28,6 +28,9 @@ export interface CreatePendingSubscriptionInput {
 
 const ALLOWED_TIERS = ["STARTER", "GROWTH", "ENTERPRISE"] as const;
 
+/** Request rows are written lowercase; compare case-insensitively so seeds/imports can't slip through. */
+const PENDING_STATUS_FILTER = { equals: "pending", mode: "insensitive" } as const;
+
 /** Maps the checkout's lowercase tier names onto the SubscriptionPlan enum. */
 function normalizeTier(tier: unknown): SubscriptionPlan {
   const normalized = String(tier ?? "").trim().toUpperCase();
@@ -45,6 +48,15 @@ export async function createPendingSubscription(input: CreatePendingSubscription
   }
 
   const tier = normalizeTier(input.tier);
+
+  // One open request per company: a second tier change must wait for review.
+  const alreadyPending = await prisma.pendingSubscriptionRequest.findFirst({
+    where: { companyId, status: PENDING_STATUS_FILTER },
+    select: { id: true },
+  });
+  if (alreadyPending) {
+    throw new HttpError(400, "A subscription request is already pending approval.");
+  }
 
   const request = await prisma.pendingSubscriptionRequest.create({
     data: {
@@ -65,6 +77,29 @@ export async function createPendingSubscription(input: CreatePendingSubscription
       },
     },
   });
+
+  return {
+    id: request.id,
+    companyId: request.companyId,
+    userId: request.userId,
+    email: request.email,
+    tier: request.tier,
+    status: request.status as SubscriptionStatus,
+    proofUrl: request.proofUrl,
+    referenceId: request.referenceId,
+    createdAt: request.createdAt,
+  };
+}
+
+export async function getMyPendingSubscription(companyId: string): Promise<PendingSubscriptionRequest | null> {
+  if (!companyId) return null;
+
+  const request = await prisma.pendingSubscriptionRequest.findFirst({
+    where: { companyId, status: PENDING_STATUS_FILTER },
+    orderBy: { createdAt: "desc" },
+  });
+
+  if (!request) return null;
 
   return {
     id: request.id,
@@ -103,45 +138,37 @@ export async function getPendingRequests(companyId: string): Promise<PendingSubs
   }));
 }
 
-export async function approvePendingSubscription(requestId: string, companyId: string): Promise<{ request: PendingSubscriptionRequest; company: any }> {
-  // First, find and validate the request belongs to the company
+export async function approvePendingSubscription(requestId: string): Promise<{ request: PendingSubscriptionRequest; company: any }> {
   const request = await prisma.pendingSubscriptionRequest.findFirst({
-    where: { id: requestId, companyId },
+    where: { id: requestId },
   });
 
   if (!request) {
     throw new HttpError(404, "Pending subscription request not found");
   }
 
-  if (request.status !== "pending") {
+  if (String(request.status).toLowerCase() !== "pending") {
     throw new HttpError(400, "This request is already processed");
   }
 
-  // Update the company's subscription tier and status
-  const planMap: { [key: string]: SubscriptionPlan } = {
-    starter: "STARTER",
-    growth: "GROWTH",
-    enterprise: "ENTERPRISE",
-  };
+  // `tier` is already a SubscriptionPlan enum value (STARTER/GROWTH/ENTERPRISE).
+  const plan: SubscriptionPlan = request.tier;
 
-  const plan = planMap[request.tier.toLowerCase()];
-  if (!plan) {
-    throw new HttpError(400, "Invalid tier value");
-  }
+  await prisma.$transaction([
+    prisma.pendingSubscriptionRequest.update({
+      where: { id: requestId },
+      data: { status: "approved" },
+    }),
+    prisma.company.update({
+      where: { id: request.companyId },
+      data: {
+        subscriptionPlan: plan,
+        subscriptionStatus: "ACTIVE",
+      },
+    }),
+  ]);
 
-  const company = await prisma.company.update({
-    where: { id: companyId },
-    data: {
-      subscriptionPlan: plan,
-      subscriptionStatus: "ACTIVE",
-    },
-  });
-
-  // Update the request status to approved
-  await prisma.pendingSubscriptionRequest.update({
-    where: { id: requestId },
-    data: { status: "approved" },
-  });
+  const company = await prisma.company.findUnique({ where: { id: request.companyId } });
 
   return {
     request: {
@@ -151,6 +178,8 @@ export async function approvePendingSubscription(requestId: string, companyId: s
       email: request.email,
       tier: request.tier,
       status: "approved" as SubscriptionStatus,
+      proofUrl: request.proofUrl,
+      referenceId: request.referenceId,
       createdAt: request.createdAt,
     },
     company,
@@ -167,7 +196,11 @@ export async function rejectPendingSubscription(requestId: string): Promise<Pend
     throw new HttpError(404, "Pending subscription request not found");
   }
 
-  // Update the request status to rejected
+  if (String(request.status).toLowerCase() !== "pending") {
+    throw new HttpError(400, "This request is already processed");
+  }
+
+  // Rejection only closes the request; the company keeps its current plan.
   const updated = await prisma.pendingSubscriptionRequest.update({
     where: { id: requestId },
     data: { status: "rejected" },
@@ -180,6 +213,8 @@ export async function rejectPendingSubscription(requestId: string): Promise<Pend
     email: updated.email,
     tier: updated.tier,
     status: "rejected" as SubscriptionStatus,
+    proofUrl: updated.proofUrl,
+    referenceId: updated.referenceId,
     createdAt: updated.createdAt,
   };
 }

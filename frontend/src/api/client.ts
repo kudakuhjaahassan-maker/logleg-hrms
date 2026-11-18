@@ -342,6 +342,16 @@ export interface PayslipReviewResponse {
   payslips: Payslip[];
 }
 
+export interface PendingSubscriptionInfo {
+  id: string;
+  email: string;
+  tier: string;
+  status: string;
+  proofUrl?: string | null;
+  referenceId?: string | null;
+  createdAt?: string;
+}
+
 const API_BASE = "/api";
 
 export class ApiError extends Error {
@@ -519,12 +529,13 @@ export const api = {
       body: JSON.stringify(body),
     }),
   subscriptionsRequest: (body: { tier: string; proofUrl?: string; referenceId?: string }) =>
-    request<{ request: { id: string; email: string; tier: string; status: string } }>("/subscriptions/request", {
+    request<{ request: PendingSubscriptionInfo }>("/subscriptions/request", {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  subscriptionsMyStatus: () => request<{ request: PendingSubscriptionInfo | null }>("/subscriptions/my-status"),
   subscriptionsListPending: () =>
-    request<{ requests: { id: string; email: string; tier: string; status: string; createdAt: string }[] }>( "/subscriptions/pending"),
+    request<{ requests: PendingSubscriptionInfo[] }>("/subscriptions/pending"),
   subscriptionsApprove: (requestId: string) =>
     request<{ id: string }>("/subscriptions/approve", {
       method: "POST",
