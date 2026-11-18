@@ -137,10 +137,10 @@ export default function Layout() {
         </button>
       </header>
 
-      <div className={`drawer-overlay ${menuOpen ? "open" : ""}`} onClick={() => setMenuOpen(false)} aria-hidden="true" />
+      <div className="drawer-overlay ${menuOpen ? "open" : ""} z-100" onClick={() => setMenuOpen(false)} aria-hidden="true" />
       <aside
         id="mobile-nav-drawer"
-        className={`mobile-drawer ${menuOpen ? "open" : ""}`}
+        className="mobile-drawer ${menuOpen ? "open" : ""} z-95 backdrop-blur-xl border border-slate-200/60"
         aria-hidden={!menuOpen}
       >
         <div className="mobile-drawer-header">
