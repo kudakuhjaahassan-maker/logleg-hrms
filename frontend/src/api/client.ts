@@ -548,9 +548,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ requestId }),
     }),
-  subscriptionsCancelPending: (requestId: string, refundAccountDetails?: string) =>
+  subscriptionsCancelPending: (body: { requestId?: string; refundAccountDetails?: string }) =>
     request<{ id: string; status: string }>("/subscriptions/cancel-pending", {
       method: "POST",
-      body: JSON.stringify({ requestId, refundAccountDetails }),
+      body: JSON.stringify(body),
     }),
-;
+};

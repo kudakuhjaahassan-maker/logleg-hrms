@@ -243,7 +243,12 @@ export async function rejectPendingSubscription(requestId: string): Promise<Pend
   };
 }
 
-export async function cancelPendingSubscription(requestId: string, refundAccountDetails: string | null): Promise<PendingSubscriptionRequest> {
+export async function cancelPendingSubscription(
+  requestId: string,
+  refundAccountDetails: string | null,
+  companyId = "",
+  role = ""
+): Promise<PendingSubscriptionRequest> {
   // Find and validate the request
   const request = await prisma.pendingSubscriptionRequest.findFirst({
     where: { id: requestId },
@@ -251,6 +256,11 @@ export async function cancelPendingSubscription(requestId: string, refundAccount
 
   if (!request) {
     throw new HttpError(404, "Pending subscription request not found");
+  }
+
+  // Only the requesting company (or a Super Admin) may cancel this request.
+  if (role !== "SUPER_ADMIN" && request.companyId !== companyId) {
+    throw new HttpError(403, "You can only cancel requests for your own company");
   }
 
   if (String(request.status).toLowerCase() !== "pending") {

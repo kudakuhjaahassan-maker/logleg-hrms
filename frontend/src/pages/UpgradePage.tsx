@@ -147,7 +147,6 @@ export default function UpgradePage() {
   const [statusLoading, setStatusLoading] = React.useState(true);
   const [showCancelForm, setShowCancelForm] = React.useState(false);
   const [refundAccountDetails, setRefundAccountDetails] = React.useState<string>("");
-  const [cancelAccountDetails, setCancelAccountDetails] = React.useState<string>("");
   const [isCancelling, setIsCancelling] = React.useState(false);
 
   // Determine if the user is locked from making changes
@@ -238,12 +237,12 @@ export default function UpgradePage() {
     try {
       await api.subscriptionsCancelPending({
         requestId: pendingRequest?.id,
-        refundAccountDetails: cancelAccountDetails.trim() || undefined,
+        refundAccountDetails: refundAccountDetails.trim() || undefined,
       });
       setShowCancelForm(false);
       setPendingRequest(null);
       setSelectedTier(null);
-      setCancelAccountDetails("");
+      setRefundAccountDetails("");
       await loadStatus();
     } catch (err: any) {
       setSubmitError(err?.message || "Failed to cancel request. Please try again.");
@@ -394,127 +393,94 @@ export default function UpgradePage() {
                 </a>
               )}
 
-          {/* Cancel Request & Refund Input Section */}
+            </div>
+          )}
+
+          {/* Self-service cancellation with optional refund account details */}
           {isLocked && (
-            <div className="mt-6 pt-6 border-t border-amber-200">
+            <div style={{ marginTop: "16px", paddingTop: "16px", borderTop: "1px solid #fcd34d" }}>
               {!showCancelForm ? (
                 <button
+                  type="button"
                   onClick={() => setShowCancelForm(true)}
-                  className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-medium py-2.5 px-4 rounded-lg border border-red-200 transition-colors text-sm flex items-center justify-center gap-2"
+                  style={{
+                    width: "100%",
+                    padding: "10px 16px",
+                    background: "#fef2f2",
+                    border: "1px solid #fca5a5",
+                    borderRadius: "8px",
+                    color: "#b91c1c",
+                    fontSize: "14px",
+                    fontWeight: 600,
+                    cursor: "pointer",
+                  }}
                 >
-                  Cancel Pending Request
+                  Cancel Request
                 </button>
               ) : (
-                <div className="space-y-3 bg-white/60 p-4 rounded-lg border border-amber-200">
-                  <label className="block text-xs font-semibold text-gray-700">
-                    Refund BML Account Details (Account Name & Number)
+                <form
+                  onSubmit={handleCancelRequest}
+                  style={{ display: "flex", flexDirection: "column", gap: "10px" }}
+                >
+                  <label style={{ fontSize: "13px", fontWeight: 600, color: "#78350f" }}>
+                    Refund BML Account Details (Account Name &amp; Number)
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Mohamed Ahmed - 7700001234567"
+                    placeholder="e.g. Aminath Eenaash - 7730000593344"
                     value={refundAccountDetails}
                     onChange={(e) => setRefundAccountDetails(e.target.value)}
-                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                    style={{
+                      width: "100%",
+                      padding: "8px 10px",
+                      fontSize: "14px",
+                      border: "1px solid #d1d5db",
+                      borderRadius: "6px",
+                      background: "#ffffff",
+                    }}
                   />
-                  <div className="flex gap-2 pt-1">
+                  {submitError && (
+                    <p style={{ margin: 0, fontSize: "13px", color: "#b91c1c" }}>{submitError}</p>
+                  )}
+                  <div style={{ display: "flex", gap: "8px" }}>
                     <button
-                      onClick={handleCancelRequest}
+                      type="submit"
                       disabled={isCancelling}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 rounded-md text-xs transition-colors disabled:opacity-50"
+                      style={{
+                        flex: 1,
+                        padding: "8px 12px",
+                        background: "#dc2626",
+                        color: "#ffffff",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        fontWeight: 600,
+                        cursor: isCancelling ? "not-allowed" : "pointer",
+                        opacity: isCancelling ? 0.6 : 1,
+                      }}
                     >
-                      {isCancelling ? "Cancelling..." : "Confirm Cancellation"}
+                      {isCancelling ? "Cancelling..." : "Submit Cancellation"}
                     </button>
                     <button
-                      onClick={() => setShowCancelForm(false)}
+                      type="button"
                       disabled={isCancelling}
-                      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-md text-xs transition-colors"
+                      onClick={() => setShowCancelForm(false)}
+                      style={{
+                        padding: "8px 12px",
+                        background: "#e5e7eb",
+                        color: "#374151",
+                        border: "none",
+                        borderRadius: "6px",
+                        fontSize: "14px",
+                        cursor: "pointer",
+                      }}
                     >
                       Back
                     </button>
                   </div>
-                </div>
+                </form>
               )}
             </div>
-          )}
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* Cancel Request form inside the pending banner */}
-      {isLocked && (
-        <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #e5e7eb" }}>
-          <button
-            style={{
-              width: "100%",
-              marginBottom: "8px",
-              background: "#fef3c7",
-              border: "2px solid #f59e0b",
-              borderRadius: "8px",
-              color: "#78350f",
-              padding: "8px 12px",
-              fontSize: "14px",
-              cursor: "pointer",
-              textAlign: "left",
-            }}
-            onClick={() => setShowCancelForm(!showCancelForm)}
-          >
-            Cancel Request
-          </button>
-          {showCancelForm && (
-            <form
-              style={{ marginTop: "8px" }}
-              onSubmit={handleCancelRequest}
-            >
-              <div style={{ marginBottom: "12px" }}
-                style={{ fontSize: "14px", lineHeight: 1.6 }}
-              >
-                <label style={{ display: "block", marginBottom: "4px" }}>
-                  Refund BML Account Details (Account Name & Number)
-                </label>
-                <input
-                  type="text"
-                  placeholder="e.g. ALI THOA / 7723461830001"
-                  value={cancelAccountDetails}
-                  onChange={(e) => setCancelAccountDetails(e.target.value)}
-                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #d1d5db" }}
-                />
-              </div>
-              <div style={{ display: "flex", gap: "8px" }}>
-                <button
-                  type="submit"
-                  style={{
-                    flex: 1,
-                    background: "#f59e0b",
-                    color: "#78350f",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "8px 12px",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                  }}
-                  disabled={!cancelAccountDetails.trim() || isCancelling}
-                >
-                  {isCancelling ? "Cancelling..." : "Submit Cancellation"}
-                </button>
-                <button
-                  type="button"
-                  style={{
-                    flex: 1,
-                    background: "#e5e7eb",
-                    color: "#6b7280",
-                    border: "none",
-                    borderRadius: "6px",
-                    padding: "8px 12px",
-                    fontSize: "14px",
-                    cursor: "pointer",
-                  }}
-                  onClick={() => setShowCancelForm(false)}
-                >
-                  Cancel
-                </button>
-              </div>
-            </form>
           )}
         </div>
       )}

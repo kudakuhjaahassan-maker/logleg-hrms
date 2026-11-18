@@ -99,4 +99,28 @@ router.post(
   )
 );
 
+// POST /api/subscriptions/cancel-pending - Employee cancels their own pending request,
+// optionally supplying refund account details so Super Admin can pay the money back.
+router.post(
+  "/cancel-pending",
+  authenticate,
+  asyncHandler(
+    async (req: import("express").Request, res: import("express").Response) => {
+      const body = ((req as any).body ?? {}) as Record<string, unknown>;
+      const requestId = typeof body.requestId === "string" ? body.requestId : "";
+      const refundAccountDetails =
+        typeof body.refundAccountDetails === "string" && body.refundAccountDetails.trim()
+          ? body.refundAccountDetails.trim()
+          : null;
+      const result = await subscriptionService.cancelPendingSubscription(
+        requestId,
+        refundAccountDetails,
+        (req as any).auth?.companyId || "",
+        (req as any).auth?.role || ""
+      );
+      res.json(result);
+    }
+  )
+);
+
 export default router;
