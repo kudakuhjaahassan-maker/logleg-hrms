@@ -146,9 +146,22 @@ export default function UpgradePage() {
   const [pendingRequest, setPendingRequest] = React.useState<PendingSubscriptionInfo | null>(null);
   const [statusLoading, setStatusLoading] = React.useState(true);
 
+  // Determine if the user is locked from making changes
+  const isLocked = pendingRequest !== null;
+
+  // Determine the current plan and if user is SUPER_ADMIN
   const currentPlan = (company?.subscriptionPlan ?? user?.company?.subscriptionPlan ?? "FREE").toUpperCase();
   const accountEmail = user?.email ?? "";
-  const isLocked = pendingRequest !== null;
+  const isSuperAdmin = user?.role === "SUPER_ADMIN";
+
+  // Per-tier feature gating: determine if a tier is accessible
+  // Users can only select tiers at or above their current plan,
+  // unless they are SUPER_ADMIN
+  const maxAccessibleTier: TierId = isSuperAdmin
+    ? ("enterprise" as TierId)
+    : (TIERS.findIndex((t) => t.tier === currentPlan.toLowerCase()) >= 0
+        ? (currentPlan.toLowerCase() as TierId)
+        : "starter");
 
   const loadStatus = React.useCallback(async () => {
     try {
@@ -277,7 +290,7 @@ export default function UpgradePage() {
         <p className="muted">Checking your subscription request status...</p>
       ) : null}
 
-      {/* Pending lock: one open request per company blocks any further plan change. */}
+      {/* Pending lock: one open request per company blocks any further plan change. */}{" "}
       {isLocked && (
         <div
           role="alert"
@@ -359,19 +372,29 @@ export default function UpgradePage() {
       )}
 
       <div className="tier-grid">
-        {TIERS.map((definition) => (
-          <TierCard
-            key={definition.tier}
-            definition={definition}
-            selected={selectedTier === definition.tier}
-            disabled={isLocked}
-            onSelect={() => {
-              if (isLocked) return;
-              setSelectedTier(definition.tier);
-              setSubmitError(null);
-            }}
-          />
-        ))}
+        {TIERS.map((definition) => {
+          // Per-tier gating: disable tiers below the user's current access level
+          // unless they are SUPER_ADMIN
+          const tierDisabled =
+            !isSuperAdmin &&
+            TIERS.findIndex((t) => t.tier === definition.tier) <
+              TIERS.findIndex((t) => t.tier === maxAccessibleTier);
+
+          return (
+            <TierCard
+              key={definition.tier}
+              definition={definition}
+              selected={selectedTier === definition.tier}
+              disabled={isLocked || tierDisabled}
+              onSelect={() => {
+                if (isLocked) return;
+                if (tierDisabled) return;
+                setSelectedTier(definition.tier);
+                setSubmitError(null);
+              }}
+            />
+          );
+        })}
       </div>
 
       {isLocked ? (

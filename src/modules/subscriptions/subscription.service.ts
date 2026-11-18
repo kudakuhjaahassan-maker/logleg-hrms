@@ -151,6 +151,17 @@ export async function approvePendingSubscription(requestId: string): Promise<{ r
     throw new HttpError(400, "This request is already processed");
   }
 
+  // Get the request's company first, then scope to the caller's company unless SUPER_ADMIN
+  const requester = await prisma.user.findFirst({
+    where: { id: request.userId },
+    select: { companyId: true, role: true },
+  });
+
+  // If caller is not SUPER_ADMIN, restrict to their own company's request
+  if (requester?.role !== "SUPER_ADMIN" && requester?.companyId !== request.companyId) {
+    throw new HttpError(403, "You can only approve requests for your own company");
+  }
+
   // `tier` is already a SubscriptionPlan enum value (STARTER/GROWTH/ENTERPRISE).
   const plan: SubscriptionPlan = request.tier;
 
