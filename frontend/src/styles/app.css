@@ -1427,12 +1427,60 @@ textarea:focus {
   --settings-surface: #ffffff;
   --card-bg: #ffffff;
   --border: #e2e8f0;
-  --muted: #64748b;
+  --muted: #475569;
   --text: #0f172a;
   --text-main: #0f172a;
-  --text-subtle: #64748b;
+  --text-subtle: #475569;
   color-scheme: light;
   color: #0f172a;
+}
+
+/* Helper and description text stays on neutral slate greys and never picks up
+   the brand colour, which is unreadable on dark navy or dark tinted surfaces. */
+.settings-page .subtle,
+.settings-page .field-hint,
+.settings-page .preview-caption,
+.settings-page .contrast-note,
+.settings-page .theme-option-desc,
+.settings-page .preset-name {
+  color: #475569;
+}
+
+.settings-page .field-hint .link-btn {
+  color: #475569;
+}
+
+.settings-page .card-header-row {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 6px 12px;
+  flex-wrap: wrap;
+  margin-bottom: 14px;
+}
+
+.settings-page .card-header-row h3 {
+  margin: 0;
+}
+
+.settings-page .form-section {
+  padding: 16px;
+  margin-bottom: 24px;
+  background: var(--settings-surface, #ffffff);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+
+.settings-page .form-section:last-child {
+  margin-bottom: 0;
+}
+
+.settings-page .form-section-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--text);
+  margin-bottom: 10px;
 }
 
 .grid-settings {
@@ -1484,7 +1532,9 @@ textarea:focus {
 .brand-preview {
   border: 1px dashed var(--border);
   border-radius: var(--radius);
-  padding: 14px;
+  padding: 16px;
+  margin-bottom: 24px;
+  overflow: hidden;
   background: var(--settings-surface, #f8fafc);
   display: flex;
   flex-direction: column;
@@ -1500,6 +1550,17 @@ textarea:focus {
   border: 1px solid var(--header-border);
   border-radius: 10px;
   padding: 10px 12px;
+  overflow: hidden;
+}
+
+.brand-preview-topbar .brand-text {
+  min-width: 0;
+}
+
+.brand-preview-topbar .brand-title {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .brand-preview-topbar .brand-logo {
@@ -1527,15 +1588,17 @@ textarea:focus {
   color: var(--text-main, var(--text));
   border: 1px solid var(--border);
   border-radius: 10px;
-  padding: 12px;
+  padding: 16px;
   max-width: 100%;
-  overflow-x: auto;
+  overflow: auto;
 }
 
 .preview-caption {
   font-size: 11.5px;
   color: var(--muted);
   text-align: right;
+  padding: 0 2px;
+  overflow-wrap: anywhere;
 }
 
 .brand-preview-nav {
@@ -1570,6 +1633,7 @@ textarea:focus {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
+  margin-bottom: 24px;
 }
 
 .theme-option {
@@ -1577,7 +1641,8 @@ textarea:focus {
   flex-direction: column;
   gap: 4px;
   text-align: left;
-  padding: 8px;
+  padding: 12px;
+  overflow: hidden;
   background: #fff;
   border: 1px solid var(--border);
   border-radius: 10px;
@@ -1655,8 +1720,10 @@ textarea:focus {
 
 .theme-option-desc {
   font-size: 10.5px;
-  line-height: 1.25;
+  line-height: 1.35;
   color: var(--muted);
+  padding: 0 2px 2px;
+  overflow-wrap: anywhere;
 }
 
 .preset-swatch {
@@ -1752,6 +1819,15 @@ textarea:focus {
     --text-subtle: #94a3b8;
     color-scheme: dark;
     color: #f8fafc;
+  }
+  .settings-page .subtle,
+  .settings-page .field-hint,
+  .settings-page .field-hint .link-btn,
+  .settings-page .preview-caption,
+  .settings-page .contrast-note,
+  .settings-page .theme-option-desc,
+  .settings-page .preset-name {
+    color: #94a3b8;
   }
   .settings-page .theme-option,
   .settings-page .preset-swatch,
