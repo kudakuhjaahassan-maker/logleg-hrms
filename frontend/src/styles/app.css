@@ -43,6 +43,9 @@
   --header-control-text: #0f172a;
   --header-control-border: #e2e8f0;
   --header-logo-bg: transparent;
+  --heading-text-color: #0f172a;
+  --sub-text-color: #64748b;
+  --heading-bold: 400;
   --radius: 12px;
   --radius-sm: 8px;
   --shadow: 0 10px 40px rgba(15, 23, 42, 0.10);
@@ -52,7 +55,7 @@
   --transition-fast: 150ms ease;
   --transition-normal: 200ms ease;
   --transition-slow: 300ms ease;
-}
+
 
 /* The workspace is a light design (light cards, brand header, light auth pages),
    so it keeps its palette even when the OS is in dark mode. Letting the system
@@ -225,7 +228,7 @@ code {
 
 .brand-text { min-width: 0; }
 .brand-title {
-  font-weight: 700;
+  font-weight: var(--heading-bold, 700);
   letter-spacing: 0.2px;
   font-size: 15px;
   line-height: 1.25;
@@ -233,11 +236,23 @@ code {
   overflow: hidden;
   text-overflow: ellipsis;
   max-width: 220px;
+  color: var(--heading-text-color, var(--text-main, var(--text)));
 }
 .brand-sub {
   font-size: 11px;
   line-height: 1.2;
   color: var(--header-muted);
+}
+
+/* Heading text color overrides from settings */
+h1, h2, h3, h4, h5, h6 {
+  color: var(--heading-text-color, var(--text-main, var(--text)));
+  font-weight: var(--heading-bold, 700);
+}
+
+/* Sub/description text color overrides */
+.sub-heading, .sub-text, .description {
+  color: var(--sub-text-color, var(--text-subtle, var(--text-muted)));
 }
 
 /* Navigation Links */
