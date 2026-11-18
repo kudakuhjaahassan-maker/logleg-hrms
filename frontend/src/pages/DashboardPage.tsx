@@ -10,7 +10,11 @@ export const DashboardPage = () => {
   return (
     <div className="dashboard-container">
       <ClockWidget />
-      {isAdmin && <AttendanceTrendChart data={[]} />}
+      {isAdmin ? (
+        <AttendanceTrendChart data={[]} />
+      ) : (
+        <div className="h-24"/>
+      )}
       <h2>Quick Links</h2>
       <div className="quick-links">
         {user && (
