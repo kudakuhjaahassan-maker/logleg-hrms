@@ -106,6 +106,9 @@ export default function ManagementSubscriptionsPage() {
   const [showCancelledRefund, setShowCancelledRefund] = useState(false);
   const [openPaymentSlipModal, setOpenPaymentSlipModal] = useState(false);
   const [paymentSlipImageUrl, setPaymentSlipImageUrl] = useState<string | null>(null);
+  const [isMobile, setIsMobile] = useState<boolean>(() =>
+    typeof window !== "undefined" ? window.matchMedia("(max-width: 767px)").matches : false
+  );
   const lightboxRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
@@ -130,6 +133,20 @@ export default function ManagementSubscriptionsPage() {
       cancelled = true;
     };
   }, [isSuperAdmin]);
+
+  useEffect(() => {
+    const mql = window.matchMedia("(max-width: 767px)");
+    const handler = (e: MediaQueryListEvent) => setIsMobile(e.matches);
+    // set initial
+    setIsMobile(mql.matches);
+    if (typeof mql.addEventListener === "function") {
+      mql.addEventListener("change", handler);
+      return () => mql.removeEventListener("change", handler);
+    }
+    // fallback for older browsers
+    mql.addListener(handler);
+    return () => mql.removeListener(handler);
+  }, []);
 
   const handleApprove = async (requestId: string) => {
     try {
@@ -266,145 +283,141 @@ export default function ManagementSubscriptionsPage() {
               : "There are currently no pending subscription requests for this company."}
           </p>
         </div>
-      ) : (
-        <>
-          {/* Mobile card view */}
-          <div className="block md:hidden flex flex-col gap-3">
-            {filteredRequests.map((req) => {
-              const status = (req.status ?? "pending").toLowerCase();
-              return (
-                <div key={req.id} className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
-                  <div>
-                    <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Email</div>
-                    <div style={{ fontWeight: 500, wordBreak: "break-word" }}>{req.email}</div>
-                  </div>
-                  <div>
-                    <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Requested Tier</div>
-                    <div>{tierLabel(req.tier)}</div>
-                  </div>
-                  <div>
-                    <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Status</div>
-                    <span
-                      className={`badge badge-${status === "approved" ? "success" : status === "rejected" ? "danger" : "warning"}`}
-                    >
-                      {statusLabel(req.status)}
-                    </span>
-                  </div>
-                  <div>
-                    <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Reference ID</div>
-                    <div style={{ wordBreak: "break-word" }}>{req.referenceId || "—"}</div>
-                  </div>
-                  <div>
-                    <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Refund Account Details</div>
-                    <div style={{ wordBreak: "break-word" }}>{req.refundAccountDetails || "—"}</div>
-                  </div>
-                  <div>
-                    <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Payment Slip</div>
-                    <div style={{ marginTop: "4px" }}>
-                      {renderPaymentSlip(req.proofUrl, () => setOpenPaymentSlipModal(true), (url) => setPaymentSlipImageUrl(url))}
-                    </div>
-                  </div>
-                  {(status === "pending" || status === "cancelled") && (
-                    <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.25rem" }}>
-                      {status === "pending" && (
-                        <>
-                          <button
-                            onClick={() => handleApprove(req.id)}
-                            className="btn btn-sm btn-primary btn-block"
-                            style={{ padding: "10px 14px", minHeight: "44px" }}
-                          >
-                            Approve / Unlock Tier
-                          </button>
-                          <button
-                            onClick={() => handleReject(req.id)}
-                            className="btn btn-sm btn-secondary btn-block"
-                            style={{ padding: "10px 14px", minHeight: "44px" }}
-                          >
-                            Reject
-                          </button>
-                        </>
-                      )}
-                      {status === "cancelled" && (
-                        <span className="muted" style={{ fontSize: "0.85rem" }}>
-                          Awaiting refund payout
-                        </span>
-                      )}
-                    </div>
-                  )}
+      ) : isMobile ? (
+        <div className="block md:hidden flex flex-col gap-3">
+          {filteredRequests.map((req) => {
+            const status = (req.status ?? "pending").toLowerCase();
+            return (
+              <div key={req.id} className="card" style={{ padding: "16px", display: "flex", flexDirection: "column", gap: "0.75rem" }}>
+                <div>
+                  <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Email</div>
+                  <div style={{ fontWeight: 500, wordBreak: "break-word" }}>{req.email}</div>
                 </div>
-              );
-            })}
-          </div>
-
-          {/* Desktop table view */}
-          <div className="hidden md:block w-full max-w-full overflow-x-auto">
-            <table className="table min-w-[750px] w-full" style={{ tableLayout: "auto" }}>
-              <thead>
-                <tr>
-                  <th className="whitespace-nowrap">Email</th>
-                  <th className="whitespace-nowrap">Requested Tier</th>
-                  <th className="whitespace-nowrap">Status</th>
-                  <th className="whitespace-nowrap">Reference ID</th>
-                  <th className="whitespace-nowrap">Refund Account Details</th>
-                  <th className="whitespace-nowrap">Payment Slip</th>
-                  <th className="whitespace-nowrap">Actions</th>
-                </tr>
-              </thead>
-              <tbody>
-                {filteredRequests.map((req) => {
-                  const status = (req.status ?? "pending").toLowerCase();
-                  return (
-                    <tr key={req.id}>
-                      <td className="whitespace-nowrap">{req.email}</td>
-                      <td className="whitespace-nowrap">{tierLabel(req.tier)}</td>
-                      <td className="whitespace-nowrap">
-                        <span
-                          className={`badge badge-${status === "approved" ? "success" : status === "rejected" ? "danger" : "warning"}`}
+                <div>
+                  <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Requested Tier</div>
+                  <div>{tierLabel(req.tier)}</div>
+                </div>
+                <div>
+                  <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Status</div>
+                  <span
+                    className={`badge badge-${status === "approved" ? "success" : status === "rejected" ? "danger" : "warning"}`}
+                  >
+                    {statusLabel(req.status)}
+                  </span>
+                </div>
+                <div>
+                  <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Reference ID</div>
+                  <div style={{ wordBreak: "break-word" }}>{req.referenceId || "—"}</div>
+                </div>
+                <div>
+                  <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Refund Account Details</div>
+                  <div style={{ wordBreak: "break-word" }}>{req.refundAccountDetails || "—"}</div>
+                </div>
+                <div>
+                  <div className="muted" style={{ fontSize: "12px", textTransform: "uppercase", letterSpacing: "0.04em" }}>Payment Slip</div>
+                  <div style={{ marginTop: "4px" }}>
+                    {renderPaymentSlip(req.proofUrl, () => setOpenPaymentSlipModal(true), (url) => setPaymentSlipImageUrl(url))}
+                  </div>
+                </div>
+                {(status === "pending" || status === "cancelled") && (
+                  <div style={{ display: "flex", flexDirection: "column", gap: "0.5rem", marginTop: "0.25rem" }}>
+                    {status === "pending" && (
+                      <>
+                        <button
+                          onClick={() => handleApprove(req.id)}
+                          className="btn btn-sm btn-primary btn-block"
+                          style={{ padding: "10px 14px", minHeight: "44px" }}
                         >
-                          {statusLabel(req.status)}
-                        </span>
-                      </td>
-                      <td className="whitespace-nowrap">{req.referenceId || "—"}</td>
-                      <td className="whitespace-nowrap">
-                        {req.refundAccountDetails ? (
-                          <span>{req.refundAccountDetails}</span>
-                        ) : (
-                          <span>—</span>
+                          Approve / Unlock Tier
+                        </button>
+                        <button
+                          onClick={() => handleReject(req.id)}
+                          className="btn btn-sm btn-secondary btn-block"
+                          style={{ padding: "10px 14px", minHeight: "44px" }}
+                        >
+                          Reject
+                        </button>
+                      </>
+                    )}
+                    {status === "cancelled" && (
+                      <span className="muted" style={{ fontSize: "0.85rem" }}>
+                        Awaiting refund payout
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+            );
+          })}
+        </div>
+      ) : (
+        <div className="hidden md:block w-full max-w-full overflow-x-auto" style={{ width: "100%", maxWidth: "100%", overflowX: "auto" }}>
+          <table className="table min-w-[750px] w-full" style={{ tableLayout: "auto", minWidth: "750px", width: "100%" }}>
+            <thead>
+              <tr>
+                <th style={{ whiteSpace: "nowrap" }}>Email</th>
+                <th style={{ whiteSpace: "nowrap" }}>Requested Tier</th>
+                <th style={{ whiteSpace: "nowrap" }}>Status</th>
+                <th style={{ whiteSpace: "nowrap" }}>Reference ID</th>
+                <th style={{ whiteSpace: "nowrap" }}>Refund Account Details</th>
+                <th style={{ whiteSpace: "nowrap" }}>Payment Slip</th>
+                <th style={{ whiteSpace: "nowrap" }}>Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredRequests.map((req) => {
+                const status = (req.status ?? "pending").toLowerCase();
+                return (
+                  <tr key={req.id}>
+                    <td style={{ whiteSpace: "nowrap" }}>{req.email}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>{tierLabel(req.tier)}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      <span
+                        className={`badge badge-${status === "approved" ? "success" : status === "rejected" ? "danger" : "warning"}`}
+                      >
+                        {statusLabel(req.status)}
+                      </span>
+                    </td>
+                    <td style={{ whiteSpace: "nowrap" }}>{req.referenceId || "—"}</td>
+                    <td style={{ whiteSpace: "nowrap" }}>
+                      {req.refundAccountDetails ? (
+                        <span>{req.refundAccountDetails}</span>
+                      ) : (
+                        <span>—</span>
+                      )}
+                    </td>
+                    <td style={{ whiteSpace: "nowrap" }}>{renderPaymentSlip(req.proofUrl, () => setOpenPaymentSlipModal(true), (url) => setPaymentSlipImageUrl(url))}</td>
+                    <td>
+                      <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
+                        {status === "pending" && (
+                          <>
+                            <button
+                              onClick={() => handleApprove(req.id)}
+                              className="btn btn-sm btn-primary"
+                            >
+                              Approve / Unlock Tier
+                            </button>
+                            <button
+                              onClick={() => handleReject(req.id)}
+                              className="btn btn-sm btn-secondary"
+                            >
+                              Reject
+                            </button>
+                          </>
                         )}
-                      </td>
-                      <td className="whitespace-nowrap">{renderPaymentSlip(req.proofUrl, () => setOpenPaymentSlipModal(true), (url) => setPaymentSlipImageUrl(url))}</td>
-                      <td>
-                        <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                          {status === "pending" && (
-                            <>
-                              <button
-                                onClick={() => handleApprove(req.id)}
-                                className="btn btn-sm btn-primary"
-                              >
-                                Approve / Unlock Tier
-                              </button>
-                              <button
-                                onClick={() => handleReject(req.id)}
-                                className="btn btn-sm btn-secondary"
-                              >
-                                Reject
-                              </button>
-                            </>
-                          )}
-                          {status === "cancelled" && (
-                            <span className="muted" style={{ fontSize: "0.85rem" }}>
-                              Awaiting refund payout
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                    </tr>
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
-        </>
+                        {status === "cancelled" && (
+                          <span className="muted" style={{ fontSize: "0.85rem" }}>
+                            Awaiting refund payout
+                          </span>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );
