@@ -54,26 +54,9 @@
   --transition-slow: 300ms ease;
 }
 
-/* Glassmorphism support with dynamic theme */
-@media (prefers-color-scheme: dark) {
-  :root {
-    --card-bg: #0f172a;
-    --card-bg-glass: rgba(15, 23, 42, 0.80);
-    --card-bg-glass-dark: rgba(15, 23, 42, 0.90);
-    --bg: #0f172a;
-    --text: #f8fafc;
-    --text-muted: #94a3b8;
-    --muted: #94a3b8;
-    --text-main: #f8fafc;
-    --text-subtle: #94a3b8;
-    --border: #334155;
-    --border-glass: rgba(148, 163, 182, 0.40);
-    --header-bg: #0f172a;
-    --header-text: #f8fafc;
-    --header-muted: #94a3b8;
-    --header-border: #334155;
-  }
-}
+/* The workspace is a light design (light cards, brand header, light auth pages),
+   so it keeps its palette even when the OS is in dark mode. Letting the system
+   theme flip the text variables produced light text on light company cards. */
 
 /* Override primary color when data-theme-color attribute is set */
 [data-theme-color] {
@@ -1435,6 +1418,17 @@ textarea:focus {
   color: #0f172a;
 }
 
+.settings-page input,
+.settings-page select,
+.settings-page textarea {
+  background: #ffffff;
+  color: #0f172a;
+}
+
+.settings-page .field-hint {
+  margin-top: 0;
+}
+
 /* Helper and description text stays on neutral slate greys and never picks up
    the brand colour, which is unreadable on dark navy or dark tinted surfaces. */
 .settings-page .subtle,
@@ -1805,36 +1799,6 @@ textarea:focus {
   place-items: center;
   font-size: 11px;
   font-weight: 700;
-}
-
-/* Dark palette for the neutral settings surfaces */
-@media (prefers-color-scheme: dark) {
-  .settings-page {
-    --settings-surface: #0f172a;
-    --card-bg: #0f172a;
-    --border: #334155;
-    --muted: #94a3b8;
-    --text: #f8fafc;
-    --text-main: #f8fafc;
-    --text-subtle: #94a3b8;
-    color-scheme: dark;
-    color: #f8fafc;
-  }
-  .settings-page .subtle,
-  .settings-page .field-hint,
-  .settings-page .field-hint .link-btn,
-  .settings-page .preview-caption,
-  .settings-page .contrast-note,
-  .settings-page .theme-option-desc,
-  .settings-page .preset-name {
-    color: #94a3b8;
-  }
-  .settings-page .theme-option,
-  .settings-page .preset-swatch,
-  .settings-page .color-input {
-    background: #0f172a;
-    border-color: #334155;
-  }
 }
 
 /* Dashboard Specific */
