@@ -146,7 +146,9 @@ export default function UpgradePage() {
   const [pendingRequest, setPendingRequest] = React.useState<PendingSubscriptionInfo | null>(null);
   const [statusLoading, setStatusLoading] = React.useState(true);
   const [showCancelForm, setShowCancelForm] = React.useState(false);
+  const [refundAccountDetails, setRefundAccountDetails] = React.useState<string>("");
   const [cancelAccountDetails, setCancelAccountDetails] = React.useState<string>("");
+  const [isCancelling, setIsCancelling] = React.useState(false);
 
   // Determine if the user is locked from making changes
   const isLocked = pendingRequest !== null;
@@ -230,6 +232,7 @@ export default function UpgradePage() {
 
   const handleCancelRequest = async (event: React.FormEvent) => {
     event.preventDefault();
+    setIsCancelling(true);
     setSubmitting(true);
     setSubmitError(null);
     try {
@@ -245,6 +248,7 @@ export default function UpgradePage() {
     } catch (err: any) {
       setSubmitError(err?.message || "Failed to cancel request. Please try again.");
     } finally {
+      setIsCancelling(false);
       setSubmitting(false);
     }
   };
@@ -446,9 +450,9 @@ export default function UpgradePage() {
                     fontSize: "14px",
                     cursor: "pointer",
                   }}
-                  disabled={!cancelAccountDetails.trim()}
+                  disabled={!cancelAccountDetails.trim() || isCancelling}
                 >
-                  Submit Cancellation
+                  {isCancelling ? "Cancelling..." : "Submit Cancellation"}
                 </button>
                 <button
                   type="button"
