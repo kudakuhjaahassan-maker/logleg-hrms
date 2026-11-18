@@ -22,11 +22,11 @@ export default function Layout() {
     };
   }, [menuOpen]);
 
-  const drawerOverlayClass = menuOpen ? "drawer-overlay open z-100" : "drawer-overlay z-100";
-  const mobileDrawerClass = `mobile-drawer ${menuOpen ? "open" : ""} z-95 backdrop-blur-xl border border-slate-200/60`;
+  const drawerOverlayClass = menuOpen ? "drawer-overlay open" : "drawer-overlay";
+  const mobileDrawerClass = menuOpen ? "mobile-drawer open" : "mobile-drawer";
 
   const navLinks = (
-    <nav className="nav nav-desktop" aria-label="Primary">
+    <>
       {loading ? (
         <span className="loading">Loading...</span>
       ) : user?.role === "EMPLOYEE" ? (
@@ -92,7 +92,7 @@ export default function Layout() {
           Settings
         </NavLink>
       )}
-    </nav>
+    </>
   );
 
   return (
