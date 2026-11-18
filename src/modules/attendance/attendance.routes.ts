@@ -13,5 +13,6 @@ router.get("/today", asyncHandler(controller.myToday));
 router.post("/clock-in", asyncHandler(controller.clockIn));
 router.post("/clock-out", asyncHandler(controller.clockOut));
 router.get("/daily", authorize("MANAGER", "HR_ADMIN", "SUPER_ADMIN"), asyncHandler(controller.daily));
+router.get("/trends", authorize("SUPER_ADMIN", "HR_ADMIN"), asyncHandler(controller.trends));
 
 export default router;

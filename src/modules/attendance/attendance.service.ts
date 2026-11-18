@@ -18,7 +18,6 @@ function canViewDailyLogs(role: UserRole) {
   return role === "MANAGER" || role === "HR_ADMIN" || role === "SUPER_ADMIN";
 }
 
-/** Requested day (already a local calendar day) or the company's current local day. */
 function parseDateParam(dateStr: string | undefined, timeZone: string) {
   if (!dateStr) return startOfLocalDayUtc(new Date(), timeZone);
   const d = new Date(`${dateStr}T00:00:00.000Z`);
@@ -26,7 +25,6 @@ function parseDateParam(dateStr: string | undefined, timeZone: string) {
   return startOfDayUtc(d);
 }
 
-/** Great-circle distance between two coordinates, in meters. */
 function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2: number) {
   const toRad = (deg: number) => (deg * Math.PI) / 180;
   const lat1Rad = toRad(lat1);
@@ -40,9 +38,14 @@ function haversineDistanceMeters(lat1: number, lon1: number, lat2: number, lon2:
   return EARTH_RADIUS_METERS * c;
 }
 
-/** Radius allowed for this employee: their override, else the company default. */
 function allowedRadiusMeters(companyAllowedRadius: number, customRadiusMeters: number | null) {
   return customRadiusMeters && customRadiusMeters > 0 ? customRadiusMeters : companyAllowedRadius;
+}
+
+function addDays(date: Date, days: number): Date {
+  const result = new Date(date);
+  result.setDate(result.getDate() + days);
+  return result;
 }
 
 export async function getTodayStatus(companyId: string, employeeId: string) {
@@ -102,7 +105,6 @@ export async function clockIn(
   ]);
   if (!company) throw new HttpError(404, "Company not found");
 
-  // Attendance is keyed by the office's local day, not the UTC day.
   const today = startOfLocalDayUtc(now, company.timezone);
   const existing = await prisma.attendanceLog.findUnique({
     where: { companyId_employeeId_date: { companyId, employeeId, date: today } },
@@ -264,4 +266,69 @@ export async function getDailyLog(
       standardShiftTargetMinutes: DEFAULT_SHIFT_TARGET_MINUTES,
     },
   };
+}
+
+export async function getTrends(companyId: string) {
+  const timeZone = await companyTimeZone(companyId);
+  const today = new Date();
+  const thirtyDaysAgo = addDays(today, -30);
+
+  const [employees, allLogs] = await Promise.all([
+    prisma.user.findMany({
+      where: { companyId, status: { not: EmployeeStatus.TERMINATED } },
+      select: { id: true, status: true },
+    }),
+    prisma.attendanceLog.findMany({
+      where: {
+        companyId,
+        date: {
+          gte: thirtyDaysAgo,
+          lte: today,
+        },
+      },
+    }),
+  ]);
+
+  const totalActiveEmployees = employees.length;
+  if (totalActiveEmployees === 0) {
+    return [];
+  }
+
+  // Count present/on-time employees per day
+  const dailyCounts: Record<string, number> = {};
+  let currentDate = new Date(thirtyDaysAgo);
+  while (currentDate <= today) {
+    const dayKey: string = currentDate.toISOString().slice(0, 10);
+    dailyCounts[dayKey] = 0;
+    currentDate = addDays(currentDate, 1);
+  }
+
+  // Count present/on-time employees from logs
+  for (const log of allLogs) {
+    const logDate = String(log.date);
+    const employee = employees.find((e) => e.id === log.employeeId);
+    if (!employee) continue;
+    if (employee.status === EmployeeStatus.ON_LEAVE || employee.status === EmployeeStatus.TERMINATED) continue;
+    // Present/on-time: employee is clocked in (no clock-out yet) OR clocked in on time
+    const isClockedIn = log.clockIn && !log.clockOut;
+    if (isClockedIn) {
+      if (dailyCounts[logDate] !== undefined) {
+        dailyCounts[logDate] = dailyCounts[logDate] + 1;
+      }
+    }
+  }
+
+  // Build result for the past 14 days (or as many as available)
+  const result: Array<{ date: string; attendanceRate: number }> = [];
+  const endDate = addDays(today, -14);
+  let resultDate = addDays(today, -14);
+  while (resultDate <= today) {
+    const dayKey: string = resultDate.toISOString().slice(0, 10);
+    const count = dailyCounts[dayKey] ?? 0;
+    const attendanceRate = totalActiveEmployees > 0 ? count : 0;
+    result.push({ date: dayKey, attendanceRate: Math.round((attendanceRate / totalActiveEmployees) * 100 * 100) / 100 });
+    resultDate = addDays(resultDate, 1);
+  }
+
+  return result;
 }

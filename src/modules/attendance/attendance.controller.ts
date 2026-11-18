@@ -43,3 +43,8 @@ export async function daily(req: Request, res: Response) {
   );
   res.json(result);
 }
+
+export async function trends(req: Request, res: Response) {
+  const result = await attendanceService.getTrends(req.auth!.companyId);
+  res.json(result);
+}

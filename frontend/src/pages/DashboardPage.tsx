@@ -2,13 +2,15 @@ import React from "react";
 import { Link } from "react-router-dom";
 import { useUser } from "../hooks/useUser";
 import ClockWidget from "../components/ClockWidget";
-
+import AttendanceTrendChart from "../components/AttendanceTrendChart";
 export const DashboardPage = () => {
   const { user } = useUser();
+  const isAdmin = user?.role === "SUPER_ADMIN" || user?.role === "HR_ADMIN";
 
   return (
     <div className="dashboard-container">
       <ClockWidget />
+      {isAdmin && <AttendanceTrendChart data={[]} />}
       <h2>Quick Links</h2>
       <div className="quick-links">
         {user && (
