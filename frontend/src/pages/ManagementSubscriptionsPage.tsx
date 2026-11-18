@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useAuth } from "../api/AuthContext";
 import { api } from "../api/client";
 
@@ -33,20 +33,24 @@ function statusLabel(status?: string | null) {
   return value.charAt(0).toUpperCase() + value.slice(1);
 }
 
-function renderPaymentSlip(proofUrl?: string | null) {
+function renderPaymentSlip(proofUrl?: string | null, onOpenModal?: () => void, setImageUrl?: (url: string) => void) {
   if (!proofUrl) return <span>—</span>;
   if (proofUrl.startsWith("data:image")) {
-    // Render data images inline without target=_blank to avoid mobile Chrome crashes
+    // Render clickable thumbnail that opens light-box modal
     return (
       <img
         src={proofUrl}
         alt="Payment slip"
-        style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "6px" }}
+        style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "4px", cursor: "pointer" }}
+        onClick={() => {
+          onOpenModal?.();
+          setImageUrl?.(proofUrl);
+        }}
       />
     );
   }
   return (
-    <a href={proofUrl} target="_blank" rel="noopener noreferrer">
+    <a href="#" onClick={() => window.open(proofUrl, "_blank", "noopener,noreferrer")} style={{ cursor: "pointer" }}>
       View slip
     </a>
   );
@@ -81,6 +85,9 @@ export default function ManagementSubscriptionsPage() {
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [showCancelledRefund, setShowCancelledRefund] = useState(false);
+  const [openPaymentSlipModal, setOpenPaymentSlipModal] = useState(false);
+  const [paymentSlipImageUrl, setPaymentSlipImageUrl] = useState<string | null>(null);
+  const lightboxRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
 
@@ -219,7 +226,7 @@ export default function ManagementSubscriptionsPage() {
                         <span>—</span>
                       )}
                     </td>
-                    <td>{renderPaymentSlip(req.proofUrl)}</td>
+                    <td>{renderPaymentSlip(req.proofUrl, () => setOpenPaymentSlipModal(true), setPaymentSlipImageUrl)}</td>
                     <td>
                       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                         {status === "pending" && (
