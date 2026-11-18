@@ -112,9 +112,11 @@ code {
   border-bottom: 1px solid var(--header-border);
   position: sticky;
   top: 0;
-  z-index: 50;
+  z-index: 100;
   box-shadow: var(--shadow-sm);
   isolation: isolate;
+  /* Add safe-area padding for notched devices */
+  padding-top: env(safe-area-inset-top, 0);
 }
 
 .topbar .brand-logo {
@@ -289,8 +291,12 @@ code {
 
 /* Button Styles */
 .topbar .btn {
-  padding: 6px 12px;
+  padding: 8px 14px;
   font-size: 13px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .menu-toggle {
@@ -324,11 +330,11 @@ code {
   display: none;
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.35);
+  background: rgba(0, 0, 0, 0.5);
   opacity: 0;
   pointer-events: none;
   transition: opacity 0.25s ease;
-  z-index: 80;
+  z-index: 100;
 }
 
 .drawer-overlay.open {
@@ -342,16 +348,18 @@ code {
   right: 0;
   bottom: 0;
   width: min(320px, 88vw);
-  background: var(--header-bg);
+  background: var(--card-bg-glass);
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
   color: var(--header-text);
-  border-left: 1px solid var(--header-border);
+  border-left: 1px solid var(--border-glass);
   box-shadow: -12px 0 30px rgba(15, 23, 42, 0.12);
   transform: translateX(100%);
   transition: transform 0.28s ease;
-  z-index: 90;
+  z-index: 95;
   display: flex;
   flex-direction: column;
-  padding: 14px 14px 18px;
+  padding: 16px;
 }
 
 .mobile-drawer.open {
@@ -395,6 +403,8 @@ code {
   max-width: 1280px;
   width: 100%;
   margin: 0 auto;
+  /* Add safe-area bottom padding */
+  padding-bottom: env(safe-area-inset-bottom, 4px);
 }
 
 .page {
@@ -494,11 +504,13 @@ input,
 select,
 textarea {
   width: 100%;
-  padding: 10px 12px;
+  padding: 12px 14px;
   border: 1px solid var(--border);
   border-radius: 8px;
   font: inherit;
   background: #fff;
+  min-height: 44px;
+  box-sizing: border-box;
 }
 
 .input:focus,
@@ -520,10 +532,15 @@ textarea:focus {
   border: 1px solid var(--border);
   background: #fff;
   color: var(--text);
-  padding: 9px 14px;
+  padding: 10px 16px;
   border-radius: 8px;
   font-weight: 600;
   cursor: pointer;
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
 }
 
 .btn:hover {
@@ -540,6 +557,10 @@ textarea:focus {
   background: var(--primary-color);
   color: var(--text-on-primary);
   border-color: var(--primary-color);
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .btn-primary:hover {
@@ -1432,6 +1453,8 @@ textarea:focus {
   border: 1px solid var(--border);
   border-radius: 10px;
   padding: 12px;
+  max-width: 100%;
+  overflow-x: auto;
 }
 
 .preview-caption {
@@ -1773,6 +1796,7 @@ textarea:focus {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
+  padding: 14px;
 }
 
 .card.glass-dark {
@@ -1780,6 +1804,7 @@ textarea:focus {
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border: 1px solid var(--border-glass);
+  padding: 14px;
 }
 
 /* Quick Links */
@@ -1794,7 +1819,7 @@ textarea:focus {
   display: flex;
   flex-direction: column;
   gap: 4px;
-  padding: 12px;
+  padding: 14px;
   border: 1px solid var(--border);
   border-radius: var(--radius);
   text-decoration: none;
@@ -1810,9 +1835,19 @@ textarea:focus {
   box-shadow: 0 8px 20px rgba(0, 0, 0, 0.10);
 }
 
+.quick-link:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
+}
+
 .quick-link:active {
   transform: translateY(1px);
   box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.quick-link:focus-visible {
+  outline: 2px solid var(--primary-color);
+  outline-offset: 2px;
 }
 
 .quick-link span {
@@ -1865,8 +1900,8 @@ textarea:focus {
 .clock-stats {
   display: grid;
   grid-template-columns: repeat(4, 1fr);
-  gap: 10px;
-  margin-bottom: 12px;
+  gap: 12px;
+  margin-bottom: 16px;
 }
 
 .clock-stat {
@@ -1896,11 +1931,11 @@ textarea:focus {
 .summary-grid {
   display: grid;
   grid-template-columns: repeat(6, 1fr);
-  gap: 12px;
+  gap: 8px;
 }
 
 .summary-card {
-  padding: 14px;
+  padding: 12px;
 }
 
 .summary-label {

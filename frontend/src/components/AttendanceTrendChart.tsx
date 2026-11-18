@@ -37,18 +37,18 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
   // Defensive guard: if data is empty, undefined, or not an array, show placeholder
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="chart-container p-6 text-center text-slate-500 backdrop-blur-xl border border-slate-200/60 rounded-2xl">
+      <div className="chart-container p-4 text-center text-slate-500 backdrop-blur-xl border border-slate-200/60 rounded-2xl">
         <svg
-          width={40}
-          height={40}
+          width={32}
+          height={32}
           viewBox="0 0 24 24"
           fill="none"
           stroke="currentColor"
-          className="mx-auto mb-3"
+          className="mx-auto mb-2"
         >
           <path d="M9 19v-4M15 19v-4M9 14v4M15 14v4M12 19L3 12h5l5 5L12 19z" />
         </svg>
-        <p>No attendance data available</p>
+        <p style={{ fontSize: "12px" }}>No attendance data available</p>
       </div>
     );
   }
@@ -76,8 +76,8 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
           7
         )}20`,
         tension: 0.3,
-        pointRadius: 4,
-        pointHoverRadius: 6,
+        pointRadius: 3,
+        pointHoverRadius: 5,
         borderWidth: 2,
         pointBackgroundColor: primaryColor,
         pointBorderColor: "#fff",
@@ -97,7 +97,7 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
         // Custom tooltip styling with glass effect
         mode: "index",
         intersect: false,
-        padding: 8,
+        padding: 6,
         backgroundColor: "rgba(15, 23, 42, 0.7)",
         titleColor: "#fff",
         bodyColor: "#fff",
@@ -136,7 +136,7 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
 
   return (
     <div
-      className={`chart-container p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 transition-colors duration-200`}
+      className={`chart-container p-4 rounded-xl border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 transition-colors duration-200 w-full max-w-xs`}
       data-primary-color={primaryColor}
     >
       <Line
