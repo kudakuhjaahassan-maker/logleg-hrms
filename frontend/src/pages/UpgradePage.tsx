@@ -371,6 +371,7 @@ export default function UpgradePage() {
                 <strong>Submitted payment slip:</strong>
               </p>
               {pendingRequest.proofUrl.startsWith("data:image") ? (
+                // Display data images inline without target=_blank to avoid mobile Chrome crashes
                 <img
                   src={pendingRequest.proofUrl}
                   alt="Submitted payment slip"

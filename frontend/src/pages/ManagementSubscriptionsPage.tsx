@@ -36,14 +36,13 @@ function statusLabel(status?: string | null) {
 function renderPaymentSlip(proofUrl?: string | null) {
   if (!proofUrl) return <span>—</span>;
   if (proofUrl.startsWith("data:image")) {
+    // Render data images inline without target=_blank to avoid mobile Chrome crashes
     return (
-      <a href={proofUrl} target="_blank" rel="noopener noreferrer">
-        <img
-          src={proofUrl}
-          alt="Payment slip"
-          style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "6px" }}
-        />
-      </a>
+      <img
+        src={proofUrl}
+        alt="Payment slip"
+        style={{ width: "80px", height: "80px", objectFit: "cover", borderRadius: "6px" }}
+      />
     );
   }
   return (
