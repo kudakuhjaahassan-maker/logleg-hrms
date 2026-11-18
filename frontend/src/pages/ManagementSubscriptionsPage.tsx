@@ -8,6 +8,10 @@ interface PendingRequest {
   tier: string;
   status: string;
   createdAt?: string;
+  companyName?: string;
+  referenceId?: string;
+  proofUrl?: string;
+  refundAccountDetails?: string | null;
 }
 
 // Access Denied component for non-SUPER_ADMIN users
@@ -38,6 +42,7 @@ export default function ManagementSubscriptionsPage() {
   const [requests, setRequests] = useState<PendingRequest[]>([]);
   const [fetching, setFetching] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [showCancelledRefund, setShowCancelledRefund] = useState(false);
 
   // Only SUPER_ADMIN can access this page; redirect all others gracefully
   if (!user || user.role !== "SUPER_ADMIN") {
@@ -88,43 +93,29 @@ export default function ManagementSubscriptionsPage() {
     );
   }
 
-  const handleApprove = async (requestId: string) => {
-    try {
-      await api.subscriptionsApprove(requestId);
-      setRequests((prev) => prev.filter((r) => r.id !== requestId));
-    } catch (err: any) {
-      setError(err?.message || "Failed to approve subscription");
-    }
-  };
-
-  const handleReject = async (requestId: string) => {
-    try {
-      await api.subscriptionsReject(requestId);
-      setRequests((prev) => prev.filter((r) => r.id !== requestId));
-    } catch (err: any) {
-      setError(err?.message || "Failed to reject subscription");
-    }
-  };
-
-  const tierLabel = (tier?: string | null) => {
-    // Tiers are stored as SubscriptionPlan enum values (STARTER/GROWTH/ENTERPRISE).
-    switch ((tier ?? "").toLowerCase()) {
-      case "starter":
-        return "Starter / Small Business";
-      case "growth":
-        return "Growth / Pro Tier";
-      case "enterprise":
-        return "Enterprise Tier";
-      default:
-        return tier || "Unknown";
-    }
-  };
+  // Filter requests based on showCancelledRefund state
+  const filteredRequests = showCancelledRefund
+    ? requests.filter(
+        (r) =>
+          r.status === "cancelled" || r.status === "refund-pending" || r.refundAccountDetails !== undefined
+      )
+    : requests.filter((r) => r.status === "pending");
 
   return (
     <div className="page">
       <div className="page-header">
         <div>
           <h2>Pending Subscription Requests</h2>
+          {/* Cancelled / Pending Refund filter */}
+          <div style={{ marginTop: "1rem", display: "flex", gap: "0.5rem" }}>
+            <button
+              variant="outline"
+              onClick={() => setShowCancelledRefund(!showCancelledRefund)}
+            >
+              {showCancelledRefund ? "Show Active" : "Show Cancelled / Pending Refund"}
+            </button>
+          </div>
+
           <p className="muted">
             View and manage subscription tier upgrade requests awaiting payment verification.
           </p>
@@ -135,10 +126,12 @@ export default function ManagementSubscriptionsPage() {
 
       {fetching ? (
         <div className="empty">Loading pending subscription requests...</div>
-      ) : requests.length === 0 ? (
+      ) : filteredRequests.length === 0 ? (
         <div className="empty">
-          <h3>No pending subscription requests</h3>
-          <p>There are currently no pending subscription requests for this company.</p>
+          <h3>{showCancelledRefund ? "No cancelled/refund requests" : "No pending requests"}</h3>
+          <p>
+            {showCancelledRefund ? "There are currently no cancelled or pending refund requests." : "There are currently no pending subscription requests for this company."}
+          </p>
         </div>
       ) : (
         <div className="table-responsive">
@@ -148,11 +141,14 @@ export default function ManagementSubscriptionsPage() {
                 <th>Email</th>
                 <th>Requested Tier</th>
                 <th>Status</th>
+                <th>Reference ID</th>
+                <th>Refund Account Details</th>
+                <th>Payment Slip</th>
                 <th>Actions</th>
               </tr>
             </thead>
             <tbody>
-              {requests.map((req) => (
+              {filteredRequests.map((req) => (
                 <tr key={req.id}>
                   <td>{req.email}</td>
                   <td>{tierLabel(req.tier)}</td>
@@ -161,22 +157,43 @@ export default function ManagementSubscriptionsPage() {
                       {req.status ? req.status.charAt(0).toUpperCase() + req.status.slice(1) : "Pending"}
                     </span>
                   </td>
+                  <td>{req.referenceId || "—"}</td>
+                  <td>
+                    {req.refundAccountDetails ? (
+                      <span style={{ whiteSpace: "nowrap" }}>{req.refundAccountDetails}</span>
+                    ) : (
+                      <span>—</span>
+                    )
+                  </td>
+                  <td>{renderPaymentSlip(req.proofUrl)}</td>
                   <td>
                     <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
-                      <button
-                        onClick={() => handleApprove(req.id)}
-                        className="btn btn-sm btn-primary"
-                        disabled={req.status !== "pending"}
-                      >
-                        Approve / Unlock Tier
-                      </button>
-                      <button
-                        onClick={() => handleReject(req.id)}
-                        className="btn btn-sm btn-secondary"
-                        disabled={req.status !== "pending"}
-                      >
-                        Reject
-                      </button>
+                      {req.status === "pending" && (
+                        <button
+                          onClick={() => handleApprove(req.id)}
+                          className="btn btn-sm btn-primary"
+                          disabled={req.status !== "pending"}
+                        >
+                          Approve / Unlock Tier
+                        </button>
+                      )}
+                      {req.status === "pending" && (
+                        <button
+                          onClick={() => handleReject(req.id)}
+                          className="btn btn-sm btn-secondary"
+                          disabled={req.status !== "pending"}
+                        >
+                          Reject
+                        </button>
+                      )}
+                      {!req.status || req.status === "cancelled" && (
+                        <button
+                          onClick={() => handleRefundDetails(req.id)}
+                          className="btn btn-sm btn-outline"
+                        >
+                          View Refund Details
+                        </button>
+                      )}
                     </div>
                   </td>
                 </tr>
@@ -188,3 +205,44 @@ export default function ManagementSubscriptionsPage() {
     </div>
   );
 }
+
+// Helper function to handle refund details viewing
+function handleRefundDetails(requestId: string) {
+  // Navigate to details or show modal
+  window.location.href = `/subscriptions/request/${requestId}/refund`;
+}
+
+// Helper function to approve a subscription
+function handleApprove = async (requestId: string) => {
+  try {
+    await api.subscriptionsApprove(requestId);
+    setRequests((prev) => prev.filter((r) => r.id !== requestId));
+  } catch (err: any) {
+    setError(err?.message || "Failed to approve subscription");
+  }
+};
+
+// Helper function to reject a subscription
+function handleReject = async (requestId: string) => {
+  try {
+    await api.subscriptionsReject(requestId);
+    setRequests((prev) => prev.filter((r) => r.id !== requestId));
+  } catch (err: any) {
+    setError(err?.message || "Failed to reject subscription");
+  }
+};
+
+// Helper function to get tier label
+function tierLabel = (tier?: string | null) => {
+  // Tiers are stored as SubscriptionPlan enum values (STARTER/GROWTH/ENTERPRISE).
+  switch ((tier ?? "").toLowerCase()) {
+    case "starter":
+      return "Starter / Small Business";
+    case "growth":
+      return "Growth / Pro Tier";
+    case "enterprise":
+      return "Enterprise Tier";
+    default:
+      return tier || "Unknown";
+  }
+};

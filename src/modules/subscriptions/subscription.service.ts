@@ -13,7 +13,10 @@ export interface PendingSubscriptionRequest {
   proofUrl?: string | null;
   /** Bank transaction reference when supplied. */
   referenceId?: string | null;
+  /// Optional refund account details (account name & number) provided for refund payout.
+  refundAccountDetails: string | null;
   createdAt: Date;
+  updatedAt: Date;
 }
 
 export interface CreatePendingSubscriptionInput {
@@ -87,7 +90,9 @@ export async function createPendingSubscription(input: CreatePendingSubscription
     status: request.status as SubscriptionStatus,
     proofUrl: request.proofUrl,
     referenceId: request.referenceId,
+    refundAccountDetails: request.refundAccountDetails,
     createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
   };
 }
 
@@ -110,7 +115,9 @@ export async function getMyPendingSubscription(companyId: string): Promise<Pendi
     status: request.status as SubscriptionStatus,
     proofUrl: request.proofUrl,
     referenceId: request.referenceId,
+    refundAccountDetails: request.refundAccountDetails,
     createdAt: request.createdAt,
+    updatedAt: request.updatedAt,
   };
 }
 
@@ -134,7 +141,9 @@ export async function getPendingRequests(companyId: string): Promise<PendingSubs
     status: r.status as SubscriptionStatus,
     proofUrl: r.proofUrl,
     referenceId: r.referenceId,
+    refundAccountDetails: r.refundAccountDetails,
     createdAt: r.createdAt,
+    updatedAt: r.updatedAt,
   }));
 }
 
@@ -191,7 +200,9 @@ export async function approvePendingSubscription(requestId: string): Promise<{ r
       status: "approved" as SubscriptionStatus,
       proofUrl: request.proofUrl,
       referenceId: request.referenceId,
+      refundAccountDetails: request.refundAccountDetails,
       createdAt: request.createdAt,
+      updatedAt: request.updatedAt,
     },
     company,
   };
@@ -226,6 +237,53 @@ export async function rejectPendingSubscription(requestId: string): Promise<Pend
     status: "rejected" as SubscriptionStatus,
     proofUrl: updated.proofUrl,
     referenceId: updated.referenceId,
+    refundAccountDetails: updated.refundAccountDetails,
     createdAt: updated.createdAt,
+    updatedAt: updated.updatedAt,
+  };
+}
+
+export async function cancelPendingSubscription(requestId: string, refundAccountDetails: string | null): Promise<PendingSubscriptionRequest> {
+  // Find and validate the request
+  const request = await prisma.pendingSubscriptionRequest.findFirst({
+    where: { id: requestId },
+  });
+
+  if (!request) {
+    throw new HttpError(404, "Pending subscription request not found");
+  }
+
+  if (String(request.status).toLowerCase() !== "pending") {
+    throw new HttpError(400, "This request is already processed");
+  }
+
+  // If refund details are provided, retain the record for Super Admin audit/refund payout
+  // with CANCELLED status and refund account details. Otherwise, delete the request.
+  let updated;
+  if (refundAccountDetails) {
+    updated = await prisma.pendingSubscriptionRequest.update({
+      where: { id: requestId },
+      data: { status: "cancelled", refundAccountDetails },
+    });
+  } else {
+    await prisma.pendingSubscriptionRequest.delete({
+      where: { id: requestId },
+    });
+    // Return the request before deletion for confirmation UI purposes
+    updated = { ...request, status: "cancelled" as SubscriptionStatus, refundAccountDetails: null };
+  }
+
+  return {
+    id: updated.id,
+    companyId: updated.companyId,
+    userId: updated.userId,
+    email: updated.email,
+    tier: updated.tier,
+    status: updated.status as SubscriptionStatus,
+    proofUrl: updated.proofUrl,
+    referenceId: updated.referenceId,
+    refundAccountDetails: updated.refundAccountDetails,
+    createdAt: updated.createdAt,
+    updatedAt: updated.updatedAt,
   };
 }

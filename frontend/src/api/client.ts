@@ -349,7 +349,9 @@ export interface PendingSubscriptionInfo {
   status: string;
   proofUrl?: string | null;
   referenceId?: string | null;
+  refundAccountDetails?: string | null;
   createdAt?: string;
+  companyName?: string;
 }
 
 const API_BASE = "/api";
@@ -546,4 +548,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify({ requestId }),
     }),
-};
+  subscriptionsCancelPending: (requestId: string, refundAccountDetails?: string) =>
+    request<{ id: string; status: string }>("/subscriptions/cancel-pending", {
+      method: "POST",
+      body: JSON.stringify({ requestId, refundAccountDetails }),
+    }),
+;

@@ -145,6 +145,8 @@ export default function UpgradePage() {
   const [submittedTier, setSubmittedTier] = React.useState<TierId | null>(null);
   const [pendingRequest, setPendingRequest] = React.useState<PendingSubscriptionInfo | null>(null);
   const [statusLoading, setStatusLoading] = React.useState(true);
+  const [showCancelForm, setShowCancelForm] = React.useState(false);
+  const [cancelAccountDetails, setCancelAccountDetails] = React.useState<string>("");
 
   // Determine if the user is locked from making changes
   const isLocked = pendingRequest !== null;
@@ -221,6 +223,27 @@ export default function UpgradePage() {
       await loadStatus();
     } catch (err: any) {
       setSubmitError(err?.message || "Failed to submit payment. Please try again.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleCancelRequest = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await api.subscriptionsCancelPending({
+        requestId: pendingRequest?.id,
+        refundAccountDetails: cancelAccountDetails.trim() || undefined,
+      });
+      setShowCancelForm(false);
+      setPendingRequest(null);
+      setSelectedTier(null);
+      setCancelAccountDetails("");
+      await loadStatus();
+    } catch (err: any) {
+      setSubmitError(err?.message || "Failed to cancel request. Please try again.");
     } finally {
       setSubmitting(false);
     }
@@ -367,6 +390,84 @@ export default function UpgradePage() {
                 </a>
               )}
             </div>
+          )}
+        </div>
+      )}
+
+      {/* Cancel Request form inside the pending banner */}
+      {isLocked && (
+        <div style={{ marginTop: "12px", paddingTop: "12px", borderTop: "1px solid #e5e7eb" }}>
+          <button
+            style={{
+              width: "100%",
+              marginBottom: "8px",
+              background: "#fef3c7",
+              border: "2px solid #f59e0b",
+              borderRadius: "8px",
+              color: "#78350f",
+              padding: "8px 12px",
+              fontSize: "14px",
+              cursor: "pointer",
+              textAlign: "left",
+            }}
+            onClick={() => setShowCancelForm(!showCancelForm)}
+          >
+            Cancel Request
+          </button>
+          {showCancelForm && (
+            <form
+              style={{ marginTop: "8px" }}
+              onSubmit={handleCancelRequest}
+            >
+              <div style={{ marginBottom: "12px" }}
+                style={{ fontSize: "14px", lineHeight: 1.6 }}
+              >
+                <label style={{ display: "block", marginBottom: "4px" }}>
+                  Refund BML Account Details (Account Name & Number)
+                </label>
+                <input
+                  type="text"
+                  placeholder="e.g. ALI THOA / 7723461830001"
+                  value={cancelAccountDetails}
+                  onChange={(e) => setCancelAccountDetails(e.target.value)}
+                  style={{ width: "100%", padding: "6px", borderRadius: "4px", border: "1px solid #d1d5db" }}
+                />
+              </div>
+              <div style={{ display: "flex", gap: "8px" }}>
+                <button
+                  type="submit"
+                  style={{
+                    flex: 1,
+                    background: "#f59e0b",
+                    color: "#78350f",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px 12px",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                  }}
+                  disabled={!cancelAccountDetails.trim()}
+                >
+                  Submit Cancellation
+                </button>
+                <button
+                  type="button"
+                  style={{
+                    flex: 1,
+                    background: "#e5e7eb",
+                    color: "#6b7280",
+                    border: "none",
+                    borderRadius: "6px",
+                    padding: "8px 12px",
+                    fontSize: "14px",
+                    cursor: "pointer",
+                  }}
+                  onClick={() => setShowCancelForm(false)}
+                >
+                  Cancel
+                </button>
+              </div>
+            </form>
           )}
         </div>
       )}
