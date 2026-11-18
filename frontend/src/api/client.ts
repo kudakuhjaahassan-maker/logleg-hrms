@@ -64,6 +64,7 @@ export interface Company {
   sidebarTheme: "light" | "dark" | "brand";
   headingTextColor?: string;
   subTextColor?: string;
+  tagline?: string;
   defaultCurrency?: string;
   standardWorkHours?: number | string;
   overtimeMultiplier?: number | string;
@@ -87,6 +88,7 @@ export interface AuthUser extends Employee {
     sidebarTheme?: "light" | "dark" | "brand";
     headingTextColor?: string;
     subTextColor?: string;
+    tagline?: string;
     defaultCurrency?: string;
     standardWorkHours?: number | string;
     overtimeMultiplier?: number | string;

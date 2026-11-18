@@ -1,23 +1,22 @@
 import { useEffect, useMemo, useState, type ReactNode } from "react";
 import { NavLink, Outlet, useLocation } from "react-router-dom";
 import {
-  BadgeCheck,
+  Home,
+  Users,
+  User,
+  Settings,
+  Menu,
+  X,
   Building2,
   CalendarDays,
   Clock3,
   CreditCard,
   FileText,
-  Home,
-  LayoutDashboard,
-  LogOut,
-  Menu,
-  Network,
-  Settings,
-  Sparkles,
-  User,
-  Users,
   Wallet,
-  X,
+  Sparkles,
+  BadgeCheck,
+  LayoutDashboard,
+  Network,
 } from "lucide-react";
 import { useAuth } from "../api/AuthContext";
 
@@ -72,10 +71,7 @@ export function normalizeHex(input?: string | null, fallback = DEFAULT_PRIMARY_H
   return fallback;
 }
 
-/**
- * Parses HEX (#a3e879, a3e879, #fff) or RGB ("rgb(163, 232, 121)" / "163, 232, 121")
- * into a normalized #rrggbb string, or returns null when invalid.
- */
+/** Parses HEX (#a3e879, a3e879, #fff) or RGB (\"rgb(163, 232, 121)\" / \"163, 232, 121\") into a normalized #rrggbb string, or returns null when invalid. */
 export function parseColorInput(raw: string): string | null {
   const trimmed = raw.trim();
   if (!trimmed) return null;
@@ -92,7 +88,7 @@ export function parseColorInput(raw: string): string | null {
   }
 
   const rgbMatch =
-    /^(?:rgb\s*\(\s*)?(\d{1,3})\s*[,\s]\s*(\d{1,3})\s*[,\s]\s*(\d{1,3})\s*\)?$/i.exec(trimmed);
+    /^(?:rgb\s*\(?)\s*(\d{1,3})\s*[,\s]\s*(\d{1,3})\s*[,\s]\s*(\d{1,3})\s*\)?$/i.exec(trimmed);
   if (rgbMatch) {
     const r = Number(rgbMatch[1]);
     const g = Number(rgbMatch[2]);
@@ -298,6 +294,7 @@ export default function Layout() {
   const location = useLocation();
 
   const brandName = (!loading && company?.name) || "LOGLEG";
+
   const themeCompany = company as (typeof company & ManualThemeConfig) | null | undefined;
   const brandTokens = useMemo(
     () => computeBrandTokens(themeCompany?.primaryColor),
@@ -349,6 +346,7 @@ export default function Layout() {
     };
   }, [menuOpen]);
 
+  // Build nav items based on role
   const navItems: NavItem[] = useMemo(() => {
     if (loading) return [];
     const items: NavItem[] = [];
@@ -374,11 +372,7 @@ export default function Layout() {
           { to: "/leave-approvals", label: "Approvals", icon: <BadgeCheck className="h-[18px] w-[18px] shrink-0" /> },
           { to: "/attendance", label: "Attendance", icon: <Clock3 className="h-[18px] w-[18px] shrink-0" /> },
           { to: "/payslips", label: "Payslips", icon: <FileText className="h-[18px] w-[18px] shrink-0" /> },
-          {
-            to: "/management/subscriptions",
-            label: "Subscription Requests",
-            icon: <CreditCard className="h-[18px] w-[18px] shrink-0" />,
-          }
+          { to: "/management/subscriptions", label: "Subscription Requests", icon: <CreditCard className="h-[18px] w-[18px] shrink-0" /> }
         );
       }
     }
@@ -405,7 +399,7 @@ export default function Layout() {
   const brandInitials = useMemo(() => {
     const parts = brandName.trim().split(/\s+/);
     if (parts.length >= 2) {
-      return `${parts[0][0] ?? ""}${parts[1][0] ?? ""}`.toUpperCase();
+      return `${parts[0]?.[0] ?? ""}${parts[1]?.[0] ?? ""}`.toUpperCase();
     }
     return brandName.slice(0, 2).toUpperCase() || "LG";
   }, [brandName]);
@@ -563,7 +557,7 @@ export default function Layout() {
               logout();
             }}
           >
-            <LogOut className="h-4 w-4 text-slate-700" aria-hidden="true" />
+            <X className="h-4 w-4 text-slate-700" aria-hidden="true" />
             <span>Log out</span>
           </button>
         </div>
