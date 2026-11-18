@@ -968,9 +968,10 @@ textarea:focus {
 }
 
 .login-shell {
-  width: min(1120px, 100%);
+  width: w-full max-w-md mx-auto px-4 overflow-x-hidden;
+  max-width: 100%;
   display: grid;
-  grid-template-columns: 1.05fr 0.95fr;
+  grid-template-columns: 1fr;
   align-items: stretch;
   background: #fff;
   border: 1px solid var(--border);
