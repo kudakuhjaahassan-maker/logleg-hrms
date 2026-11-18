@@ -267,17 +267,17 @@ export default function ManagementSubscriptionsPage() {
           </p>
         </div>
       ) : (
-        <div className="table-responsive w-full max-w-full overflow-x-auto">
-          <table className="table w-full" style={{ tableLayout: "auto", wordBreak: "break-word" }}>
+        <div className="w-full max-w-full overflow-x-auto">
+          <table className="table min-w-[750px] w-full" style={{ tableLayout: "auto" }}>
             <thead>
               <tr>
-                <th>Email</th>
-                <th>Requested Tier</th>
-                <th>Status</th>
-                <th>Reference ID</th>
-                <th>Refund Account Details</th>
-                <th>Payment Slip</th>
-                <th>Actions</th>
+                <th className="whitespace-nowrap">Email</th>
+                <th className="whitespace-nowrap">Requested Tier</th>
+                <th className="whitespace-nowrap">Status</th>
+                <th className="whitespace-nowrap">Reference ID</th>
+                <th className="whitespace-nowrap">Refund Account Details</th>
+                <th className="whitespace-nowrap">Payment Slip</th>
+                <th className="whitespace-nowrap">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -285,9 +285,9 @@ export default function ManagementSubscriptionsPage() {
                 const status = (req.status ?? "pending").toLowerCase();
                 return (
                   <tr key={req.id}>
-                    <td>{req.email}</td>
-                    <td>{tierLabel(req.tier)}</td>
-                    <td>
+                    <td className="whitespace-nowrap">{req.email}</td>
+                    <td className="whitespace-nowrap">{tierLabel(req.tier)}</td>
+                    <td className="whitespace-nowrap">
                       <span
                         className={`badge badge-${
                           status === "approved" ? "success" : status === "rejected" ? "danger" : "warning"
@@ -296,15 +296,15 @@ export default function ManagementSubscriptionsPage() {
                         {statusLabel(req.status)}
                       </span>
                     </td>
-                    <td>{req.referenceId || "—"}</td>
-                    <td>
+                    <td className="whitespace-nowrap">{req.referenceId || "—"}</td>
+                    <td className="whitespace-nowrap">
                       {req.refundAccountDetails ? (
-                        <span style={{ whiteSpace: "nowrap" }}>{req.refundAccountDetails}</span>
+                        <span>{req.refundAccountDetails}</span>
                       ) : (
                         <span>—</span>
                       )}
                     </td>
-                    <td>{renderPaymentSlip(req.proofUrl, () => setOpenPaymentSlipModal(true), setPaymentSlipImageUrl)}</td>
+                    <td className="whitespace-nowrap">{renderPaymentSlip(req.proofUrl, () => setOpenPaymentSlipModal(true), setPaymentSlipImageUrl)}</td>
                     <td>
                       <div style={{ display: "flex", gap: "0.5rem", flexWrap: "wrap" }}>
                         {status === "pending" && (
