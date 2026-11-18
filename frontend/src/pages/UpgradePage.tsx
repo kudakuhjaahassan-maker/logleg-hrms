@@ -427,7 +427,7 @@ export default function UpgradePage() {
                   </label>
                   <input
                     type="text"
-                    placeholder="e.g. Aminath Eenaash - 7730000593344"
+                    placeholder="YourName: BML/MIB account number"
                     value={refundAccountDetails}
                     onChange={(e) => setRefundAccountDetails(e.target.value)}
                     style={{
