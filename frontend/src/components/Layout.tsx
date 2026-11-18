@@ -22,12 +22,13 @@ export default function Layout() {
     };
   }, [menuOpen]);
 
+  const drawerOverlayClass = menuOpen ? "drawer-overlay open z-100" : "drawer-overlay z-100";
+  const mobileDrawerClass = `mobile-drawer ${menuOpen ? "open" : ""} z-95 backdrop-blur-xl border border-slate-200/60`;
+
   const navLinks = (
-    <>
+    <nav className="nav nav-desktop" aria-label="Primary">
       {loading ? (
-        <>
-          <span className="loading">Loading...</span>
-        </>
+        <span className="loading">Loading...</span>
       ) : user?.role === "EMPLOYEE" ? (
         <>
           <NavLink to="/employee-dashboard" className={({ isActive }) => (isActive ? "nav-link active" : "nav-link")}>
@@ -91,7 +92,7 @@ export default function Layout() {
           Settings
         </NavLink>
       )}
-    </>
+    </nav>
   );
 
   return (
@@ -105,7 +106,7 @@ export default function Layout() {
           />
           <div className="brand-text">
             <div className="brand-title">{brandName}</div>
-            <div className="brand-sub">HRMS &amp; Internal Operations</div>
+            <div className="brand-sub">HRMS & Internal Operations</div>
           </div>
         </div>
 
@@ -137,17 +138,19 @@ export default function Layout() {
         </button>
       </header>
 
-      <div className="drawer-overlay ${menuOpen ? "open" : ""} z-100" onClick={() => setMenuOpen(false)} aria-hidden="true" />
+      <div className={drawerOverlayClass} onClick={() => setMenuOpen(false)} aria-hidden="true" />
       <aside
         id="mobile-nav-drawer"
-        className="mobile-drawer ${menuOpen ? "open" : ""} z-95 backdrop-blur-xl border border-slate-200/60"
+        className={mobileDrawerClass}
         aria-hidden={!menuOpen}
       >
         <div className="mobile-drawer-header">
           {(!loading) && user && (
             <div className="mobile-drawer-user">
               <div className="user-name">{user.firstName} {user.lastName}</div>
-              <div className="user-role">{user.role}{company?.name ? ` · ${company.name}` : ""}</div>
+              <div className="user-role">
+                {user.role}{company?.name ? ` · ${company.name}` : ""}
+              </div>
             </div>
           )}
           <button type="button" className="menu-toggle close" aria-label="Close menu" onClick={() => setMenuOpen(false)}>
