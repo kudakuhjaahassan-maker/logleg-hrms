@@ -56,6 +56,20 @@ const tierTitle = (tier?: string | null) => {
   return match?.title ?? (tier || "Selected plan");
 };
 
+function tierLabel(tier?: string | null) {
+  // Tiers are stored as SubscriptionPlan enum values (STARTER/GROWTH/ENTERPRISE).
+  switch ((tier ?? "").toLowerCase()) {
+    case "starter":
+      return "Starter / Small Business";
+    case "growth":
+      return "Growth / Pro Tier";
+    case "enterprise":
+      return "Enterprise Tier";
+    default:
+      return tier || "Unknown";
+  }
+}
+
 interface TierCardProps {
   definition: TierDefinition;
   selected: boolean;
@@ -159,6 +173,7 @@ export default function UpgradePage() {
   const currentPlan = (company?.subscriptionPlan ?? user?.company?.subscriptionPlan ?? "FREE").toUpperCase();
   const accountEmail = user?.email ?? "";
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const hasActiveSubscription = currentPlan !== "FREE" && currentPlan !== "TRIALING";
 
   // Per-tier feature gating: determine if a tier is accessible
   // Users can only select tiers at or above their current plan,
@@ -275,6 +290,7 @@ export default function UpgradePage() {
   };
 
   // Post-submission confirmation: no payment details, no crash-prone state reads.
+  // SUPER_ADMIN sees lifetime active status; never upgrade prompt
   if (submittedTier) {
     return (
       <div className="upgrade-page">
@@ -313,6 +329,44 @@ export default function UpgradePage() {
           <button type="button" className="btn btn-secondary" onClick={() => setSubmittedTier(null)}>
             View request status
           </button>
+        </div>
+      </div>
+    );
+  }
+  // SUPER_ADMIN / developer: show lifetime active status, never upgrade prompt
+  if (isSuperAdmin) {
+    return (
+      <div className="upgrade-page">
+        <div className="page-header">
+          <div>
+            <h2>Active Subscription</h2>
+            <p className="muted">You have lifetime access to all LOGLEG HRMS features.</p>
+          </div>
+        </div>
+
+        <div
+          className="alert success"
+          style={{
+            marginTop: "24px",
+            padding: "24px",
+            background: "#d1f2eb",
+            border: "2px solid #059669",
+            borderRadius: "12px",
+            color: "#059669",
+          }}
+        >
+          <h3 style={{ margin: "0 0 8px 0" }}>
+            <span style={{ display: "inline-block", width: "24px", height: "24px", borderRadius: "50", background: "#059669", color: "#ffffff", fontSize: "12px", textAlign: "center", lineHeight: "24px" }}>✓</span>
+            Lifetime Access
+          </h3>
+          <p style={{ margin: "0 0 8px 0" }}>All features unlocked. No upgrade needed.</p>
+          <p style={{ margin: "0", fontSize: "14px" }}>Your account has SUPER_ADMIN privileges with active tier: <strong>{tierLabel(currentPlan.toLowerCase())}</strong>.</p>
+        </div>
+
+        <div style={{ marginTop: "24px", display: "flex", gap: "12px", flexWrap: "wrap" }}>
+          <Link className="btn btn-primary" to="/dashboard">
+            Return to Dashboard
+          </Link>
         </div>
       </div>
     );

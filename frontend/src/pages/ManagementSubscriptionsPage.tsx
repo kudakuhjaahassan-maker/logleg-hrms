@@ -112,6 +112,7 @@ export default function ManagementSubscriptionsPage() {
   const lightboxRef = useRef<HTMLDivElement>(null);
 
   const isSuperAdmin = user?.role === "SUPER_ADMIN";
+  const hasActiveSubscription = user?.company?.subscriptionPlan !== "FREE" && user?.company?.subscriptionPlan !== "TRIALING";
 
   useEffect(() => {
     if (!isSuperAdmin) return;
@@ -186,6 +187,35 @@ export default function ManagementSubscriptionsPage() {
     <div className="page">
       <div className="page-header">
         <div>
+          {/* Active tier badge for company admin with approved subscription */}
+  {hasActiveSubscription && !isSuperAdmin && (
+            <div
+              style={{
+                display: "flex",
+                alignItems: "center",
+                gap: "6px",
+                marginBottom: "1rem",
+                padding: "8px 12px",
+                background: "#d1f2eb",
+                border: "2px solid #059669",
+                borderRadius: "20px",
+                color: "#059669",
+              }}
+            >
+              <span
+                style={{
+                  display: "inline-block",
+                  width: "8px",
+                  height: "8px",
+                  borderRadius: "50",
+                  background: "#059669",
+                  boxShadow: "0 0 6px rgba(5, 150, 105, 0.4)",
+                }}
+              />
+              <span style={{ fontWeight: 500, fontSize: "14px" }}>Active: {tierLabel(user?.company?.subscriptionPlan?.toLowerCase() ?? "unknown")}</span>
+            </div>
+          )}
+
           <h2>Pending Subscription Requests</h2>
           <p className="muted">
             View and manage subscription tier upgrade requests awaiting payment verification.

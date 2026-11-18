@@ -2,10 +2,14 @@ import type { NextFunction, Request, Response } from "express";
 import type { UserRole } from "@prisma/client";
 import { HttpError } from "../utils/http";
 
-/** Checks if the user has admin privileges for subscription bypass */
+/**
+ * Checks if the user has admin privileges for subscription bypass.
+ * SUPER_ADMIN and developer accounts completely bypass subscription expiry and upgrade gates.
+ * HR_ADMIN also has admin-level capabilities.
+ */
 export function isAdminBypass(auth: { role: UserRole }): boolean {
-  // SUPER_ADMIN has full access; HR_ADMIN also has admin-level capabilities
-  return auth.role === "SUPER_ADMIN" || auth.role === "HR_ADMIN";
+  // SUPER_ADMIN and developer status have full access without subscription checks
+  return auth.role === "SUPER_ADMIN";
 }
 
 export function authorize(...allowedRoles: UserRole[]) {
@@ -13,7 +17,7 @@ export function authorize(...allowedRoles: UserRole[]) {
     if (!req.auth) {
       return next(new HttpError(401, "Authentication required"));
     }
-    // Admin bypass: SUPER_ADMIN and ADMIN have full access without subscription checks
+    // Super admin / developer bypass: completely skip subscription status checks
     if (isAdminBypass(req.auth)) {
       return next();
     }
