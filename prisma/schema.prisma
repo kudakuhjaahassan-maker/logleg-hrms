@@ -40,7 +40,7 @@ model PendingSubscriptionRequest {
   tier          SubscriptionPlan   /// starter / growth / enterprise
   status        String             @default("pending")
   /// Payment proof supplied at checkout: uploaded slip (data URL / hosted URL) and/or bank reference.
-  proofUrl      String?
+  proofUrl      String?          @db.Text
   referenceId   String?
   /// Optional refund account details (account name & number) provided for refund payout.
   refundAccountDetails String?

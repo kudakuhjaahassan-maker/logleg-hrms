@@ -38,15 +38,34 @@ function renderPaymentSlip(proofUrl?: string | null, onOpenModal?: () => void, s
   if (proofUrl.startsWith("data:image")) {
     // Render clickable thumbnail that opens light-box modal
     return (
-      <img
-        src={proofUrl}
-        alt="Payment slip"
-        style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "4px", cursor: "pointer" }}
+      <button
+        type="button"
         onClick={() => {
-          onOpenModal?.();
           setImageUrl?.(proofUrl);
+          onOpenModal?.();
         }}
-      />
+        onTouchEnd={(e) => {
+          e.preventDefault();
+          setImageUrl?.(proofUrl);
+          onOpenModal?.();
+        }}
+        style={{
+          width: "48px",
+          height: "48px",
+          padding: 0,
+          border: "none",
+          background: "transparent",
+          cursor: "pointer",
+          borderRadius: "4px",
+          overflow: "hidden",
+        }}
+      >
+        <img
+          src={proofUrl}
+          alt="Payment slip"
+          style={{ width: "48px", height: "48px", objectFit: "cover", borderRadius: "4px", pointerEvents: "none" }}
+        />
+      </button>
     );
   }
   return (
@@ -174,6 +193,63 @@ export default function ManagementSubscriptionsPage() {
       {error && (
         <div className="alert error" style={{ margin: "1rem 0" }}>
           {error}
+        </div>
+      )}
+
+      {openPaymentSlipModal && paymentSlipImageUrl && (
+        <div
+          ref={lightboxRef}
+          onClick={() => setOpenPaymentSlipModal(false)}
+          style={{
+            position: "fixed",
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: "rgba(0, 0, 0, 0.85)",
+            zIndex: 9999,
+            display: "flex",
+            alignItems: "center",
+            justifyContent: "center",
+            padding: "16px",
+          }}
+        >
+          <button
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              setOpenPaymentSlipModal(false);
+            }}
+            style={{
+              position: "absolute",
+              top: "16px",
+              right: "16px",
+              background: "rgba(255, 255, 255, 0.9)",
+              border: "none",
+              borderRadius: "50%",
+              width: "40px",
+              height: "40px",
+              fontSize: "24px",
+              cursor: "pointer",
+              display: "flex",
+              alignItems: "center",
+              justifyContent: "center",
+              lineHeight: 1,
+            }}
+          >
+            ×
+          </button>
+          <img
+            src={paymentSlipImageUrl}
+            alt="Payment slip"
+            onClick={(e) => e.stopPropagation()}
+            style={{
+              maxWidth: "95%",
+              maxHeight: "95vh",
+              objectFit: "contain",
+              borderRadius: "8px",
+            }}
+          />
         </div>
       )}
 

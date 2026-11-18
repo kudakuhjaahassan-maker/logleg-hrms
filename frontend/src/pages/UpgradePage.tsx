@@ -548,7 +548,7 @@ export default function UpgradePage() {
             <h3 style={{ margin: "0 0 12px 0", color: "#1f2937" }}>Payment Details</h3>
             <div className="bml-info" style={{ fontSize: "14px", lineHeight: 1.6 }}>
               <p>
-                <strong>Bank:</strong> Bank of Maldives (BML)
+                <strong>Bank:</strong> Bank of Maldives (BML) / Maldives Islamic Bank (MIB)
               </p>
               <p>
                 <strong>Account Number:</strong> 7723461830001
@@ -561,7 +561,7 @@ export default function UpgradePage() {
                   <strong>Amount:</strong> {priceFor(selectedTier)}
                 </p>
                 <p style={{ margin: "4px 0" }}>
-                  <strong>Instructions:</strong> Transfer the exact tier amount via BML, then upload your payment
+                  <strong>Instructions:</strong> Transfer the exact tier amount via BML or MIB, then upload your payment
                   slip or enter the transaction reference below.
                 </p>
                 <p style={{ fontSize: "12px", margin: "8px 0 0 0", color: "#6b7280" }}>
@@ -610,7 +610,7 @@ export default function UpgradePage() {
                 id="payment-reference"
                 type="text"
                 className="input"
-                placeholder="e.g. BML-2026-000123"
+                placeholder="e.g. BLAZ183729373"
                 value={referenceId}
                 onChange={(e) => setReferenceId(e.target.value)}
                 maxLength={120}
