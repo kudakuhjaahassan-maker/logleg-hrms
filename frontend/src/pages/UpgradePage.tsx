@@ -423,7 +423,7 @@ export default function UpgradePage() {
                   style={{ display: "flex", flexDirection: "column", gap: "10px" }}
                 >
                   <label style={{ fontSize: "13px", fontWeight: 600, color: "#78350f" }}>
-                    Refund BML Account Details (Account Name &amp; Number)
+                    Refund BML/MIB Account Details (Account Name &amp; Number)
                   </label>
                   <input
                     type="text"
