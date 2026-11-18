@@ -148,9 +148,12 @@ export default function UpgradePage() {
   const [showCancelForm, setShowCancelForm] = React.useState(false);
   const [refundAccountDetails, setRefundAccountDetails] = React.useState<string>("");
   const [isCancelling, setIsCancelling] = React.useState(false);
+  const [showRefundForm, setShowRefundForm] = React.useState(false);
+  const [refundRequestReason, setRefundRequestReason] = React.useState<string>("");
 
   // Determine if the user is locked from making changes
   const isLocked = pendingRequest !== null;
+  const isRequestRejected = pendingRequest?.status === "rejected";
 
   // Determine the current plan and if user is SUPER_ADMIN
   const currentPlan = (company?.subscriptionPlan ?? user?.company?.subscriptionPlan ?? "FREE").toUpperCase();
@@ -248,6 +251,25 @@ export default function UpgradePage() {
       setSubmitError(err?.message || "Failed to cancel request. Please try again.");
     } finally {
       setIsCancelling(false);
+      setSubmitting(false);
+    }
+  };
+
+  const handleRefundRequest = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setSubmitting(true);
+    setSubmitError(null);
+    try {
+      await api.subscriptionsRequestRefund({
+        requestId: pendingRequest?.id || "",
+        refundAccountDetails: (refundRequestReason ?? "").trim(),
+      });
+      setShowRefundForm(false);
+      setRefundRequestReason("");
+      await loadStatus();
+    } catch (err: any) {
+      setSubmitError(err?.message || "Failed to request refund. Please try again.");
+    } finally {
       setSubmitting(false);
     }
   };

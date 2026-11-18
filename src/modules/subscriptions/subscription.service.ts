@@ -15,6 +15,8 @@ export interface PendingSubscriptionRequest {
   referenceId?: string | null;
   /// Optional refund account details (account name & number) provided for refund payout.
   refundAccountDetails: string | null;
+  /// Reason for rejection (set when admin rejects the request)
+  rejectionReason?: string | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -143,6 +145,7 @@ export async function getPendingRequests(companyId?: string): Promise<PendingSub
     proofUrl: r.proofUrl,
     referenceId: r.referenceId,
     refundAccountDetails: r.refundAccountDetails,
+    rejectionReason: r.rejectionReason,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   }));
@@ -209,7 +212,7 @@ export async function approvePendingSubscription(requestId: string): Promise<{ r
   };
 }
 
-export async function rejectPendingSubscription(requestId: string): Promise<PendingSubscriptionRequest> {
+export async function rejectPendingSubscription(requestId: string, rejectionReason: string | null = null): Promise<PendingSubscriptionRequest> {
   // Find and validate the request
   const request = await prisma.pendingSubscriptionRequest.findFirst({
     where: { id: requestId },
@@ -226,7 +229,7 @@ export async function rejectPendingSubscription(requestId: string): Promise<Pend
   // Rejection only closes the request; the company keeps its current plan.
   const updated = await prisma.pendingSubscriptionRequest.update({
     where: { id: requestId },
-    data: { status: "rejected" },
+    data: { status: "rejected", rejectionReason },
   });
 
   return {
@@ -239,6 +242,7 @@ export async function rejectPendingSubscription(requestId: string): Promise<Pend
     proofUrl: updated.proofUrl,
     referenceId: updated.referenceId,
     refundAccountDetails: updated.refundAccountDetails,
+    rejectionReason: updated.rejectionReason,
     createdAt: updated.createdAt,
     updatedAt: updated.updatedAt,
   };

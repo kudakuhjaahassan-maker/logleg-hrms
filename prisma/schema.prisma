@@ -44,6 +44,8 @@ model PendingSubscriptionRequest {
   referenceId   String?
   /// Optional refund account details (account name & number) provided for refund payout.
   refundAccountDetails String?
+  /// Reason for rejection (set when admin rejects the request)
+  rejectionReason      String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 

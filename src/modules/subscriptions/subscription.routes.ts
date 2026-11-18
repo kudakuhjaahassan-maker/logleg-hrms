@@ -93,7 +93,12 @@ router.post(
   asyncHandler(
     async (req: import("express").Request, res: import("express").Response) => {
       const requestId: string = (req as any).body?.requestId;
-      const result = await subscriptionService.rejectPendingSubscription(requestId);
+      const rejectionReason:
+        | string
+        | undefined = typeof (req as any).body?.rejectionReason === "string"
+          ? (req as any).body?.rejectionReason.trim() || undefined
+          : undefined;
+      const result = await subscriptionService.rejectPendingSubscription(requestId, rejectionReason);
       res.json(result);
     }
   )

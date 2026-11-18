@@ -553,4 +553,9 @@ export const api = {
       method: "POST",
       body: JSON.stringify(body),
     }),
+  subscriptionsRequestRefund: (body: { requestId: string; refundAccountDetails: string }) =>
+    request<{ id: string; status: string }>("/subscriptions/request-refund", {
+      method: "POST",
+      body: JSON.stringify(body),
+    }),
 };
