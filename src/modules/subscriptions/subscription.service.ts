@@ -121,9 +121,10 @@ export async function getMyPendingSubscription(companyId: string): Promise<Pendi
   };
 }
 
-export async function getPendingRequests(companyId: string): Promise<PendingSubscriptionRequest[]> {
+export async function getPendingRequests(companyId?: string): Promise<PendingSubscriptionRequest[]> {
+  const where = companyId ? { companyId } : {};
   const requests = await prisma.pendingSubscriptionRequest.findMany({
-    where: { companyId },
+    where,
     include: {
       user: {
         select: { id: true, email: true, firstName: true, lastName: true },

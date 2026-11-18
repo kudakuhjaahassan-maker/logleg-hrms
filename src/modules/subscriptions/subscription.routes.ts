@@ -57,15 +57,15 @@ router.get(
   )
 );
 
-// GET /api/subscriptions/pending - List all pending requests
+// GET /api/subscriptions/pending - List all pending requests (SUPER_ADMIN sees all companies)
 router.get(
   "/pending",
   authenticate,
   authorize("SUPER_ADMIN"),
   asyncHandler(
     async (req: import("express").Request, res: import("express").Response) => {
-      const companyId: string = (req as any).auth?.companyId || "";
-      const requests = await subscriptionService.getPendingRequests(companyId);
+      // SUPER_ADMIN can see all companies' pending requests; don't filter by companyId
+      const requests = await subscriptionService.getPendingRequests(undefined);
       res.json({ requests });
     }
   )
