@@ -393,6 +393,49 @@ export default function UpgradePage() {
                   View submitted slip
                 </a>
               )}
+
+          {/* Cancel Request & Refund Input Section */}
+          {isLocked && (
+            <div className="mt-6 pt-6 border-t border-amber-200">
+              {!showCancelForm ? (
+                <button
+                  onClick={() => setShowCancelForm(true)}
+                  className="w-full bg-red-50 hover:bg-red-100 text-red-700 font-medium py-2.5 px-4 rounded-lg border border-red-200 transition-colors text-sm flex items-center justify-center gap-2"
+                >
+                  Cancel Pending Request
+                </button>
+              ) : (
+                <div className="space-y-3 bg-white/60 p-4 rounded-lg border border-amber-200">
+                  <label className="block text-xs font-semibold text-gray-700">
+                    Refund BML Account Details (Account Name & Number)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="e.g. Mohamed Ahmed - 7700001234567"
+                    value={refundAccountDetails}
+                    onChange={(e) => setRefundAccountDetails(e.target.value)}
+                    className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500 bg-white"
+                  />
+                  <div className="flex gap-2 pt-1">
+                    <button
+                      onClick={handleCancelRequest}
+                      disabled={isCancelling}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-medium py-2 px-3 rounded-md text-xs transition-colors disabled:opacity-50"
+                    >
+                      {isCancelling ? "Cancelling..." : "Confirm Cancellation"}
+                    </button>
+                    <button
+                      onClick={() => setShowCancelForm(false)}
+                      disabled={isCancelling}
+                      className="px-3 py-2 bg-gray-200 hover:bg-gray-300 text-gray-700 font-medium rounded-md text-xs transition-colors"
+                    >
+                      Back
+                    </button>
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
             </div>
           )}
         </div>
