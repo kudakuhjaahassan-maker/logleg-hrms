@@ -284,7 +284,7 @@ export default function ManagementSubscriptionsPage() {
           </p>
         </div>
       ) : isMobile ? (
-        <div className="block md:hidden flex flex-col gap-3">
+        <div className="block md:hidden flex flex-col">
           {filteredRequests.map((req) => {
             const status = (req.status ?? "pending").toLowerCase();
             return (
