@@ -27,15 +27,17 @@ ChartJS.register(
 
 type AttendanceTrendProps = {
   data: { date: string; attendanceRate: number }[];
+  primaryColor?: string;
 };
 
 const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
   data,
+  primaryColor = "#2563eb",
 }) => {
   // Defensive guard: if data is empty, undefined, or not an array, show placeholder
   if (!data || !Array.isArray(data) || data.length === 0) {
     return (
-      <div className="chart-container p-6 text-center text-slate-500">
+      <div className="chart-container p-6 text-center text-slate-500 backdrop-blur-xl border border-slate-200/60 rounded-2xl">
         <svg
           width={40}
           height={40}
@@ -51,6 +53,16 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
     );
   }
 
+  // Determine glass theme based on primary color lightness
+  const isDarkTheme = primaryColor.startsWith("#1") || primaryColor.startsWith("#2");
+  const cardBg = isDarkTheme
+    ? "rgba(15, 23, 42, 0.80)"
+    : "rgba(255, 255, 255, 0.80)";
+  const borderColor = isDarkTheme
+    ? "rgba(148, 163, 182, 0.40)"
+    : "rgba(148, 163, 182, 0.60)";
+  const textColor = isDarkTheme ? "#f8fafc" : "#0f172a";
+
   const chartData: any = {
     labels: data.map((item) => item.date),
     datasets: [
@@ -58,12 +70,17 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
         label: "Attendance Rate",
         data: data.map((item) => item.attendanceRate),
         fill: true,
-        borderColor: "#10b981",
-        backgroundColor: "rgba(16, 185, 129, 0.1)",
+        borderColor: primaryColor,
+        backgroundColor: `${primaryColor.substr(
+          0,
+          7
+        )}20`,
         tension: 0.3,
         pointRadius: 4,
         pointHoverRadius: 6,
         borderWidth: 2,
+        pointBackgroundColor: primaryColor,
+        pointBorderColor: "#fff",
       },
     ],
   };
@@ -77,6 +94,15 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
       },
       tooltip: {
         enabled: true,
+        // Custom tooltip styling with glass effect
+        mode: "index",
+        intersect: false,
+        padding: 8,
+        backgroundColor: "rgba(15, 23, 42, 0.7)",
+        titleColor: "#fff",
+        bodyColor: "#fff",
+        borderColor: "rgba(148, 163, 182, 0.5)",
+        borderWidth: 1,
       },
     },
     scales: {
@@ -90,11 +116,14 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
           stepSize: 5,
           max: 100,
           min: 0,
+          color: isDarkTheme ? "#fff" : "#0f172a",
           callback: (value: any) =>
             `${Number(value) === Math.round(Number(value)) ? Number(value) : value}%`,
         },
         grid: {
-          color: "rgba(148, 163, 182, 0.2)",
+          color: isDarkTheme
+            ? "rgba(148, 163, 182, 0.20)"
+            : "rgba(148, 163, 182, 0.30)",
         },
       },
       x: {
@@ -106,8 +135,14 @@ const AttendanceTrendChart: React.FC<AttendanceTrendProps> = ({
   };
 
   return (
-    <div className="chart-container p-6 rounded-2xl border border-slate-100 dark:border-slate-800 shadow-sm">
-      <Line data={chartData} options={chartOptions} />
+    <div
+      className={`chart-container p-6 rounded-2xl border border-slate-200/60 dark:border-slate-800/60 backdrop-blur-xl bg-white/80 dark:bg-slate-900/80 transition-colors duration-200`}
+      data-primary-color={primaryColor}
+    >
+      <Line
+        data={chartData}
+        options={chartOptions}
+      />
     </div>
   );
 };
