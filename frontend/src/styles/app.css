@@ -27,6 +27,7 @@
   --text: #0f172a;
   --text-dark: #0f172a;
   --text-muted: #64748b;
+  --muted: #64748b;
   --text-on-primary: #ffffff;
   --bg: #f4f7fb;
   --bg-dark: #0f172a;
@@ -60,6 +61,7 @@
     --bg: #0f172a;
     --text: #f8fafc;
     --text-muted: #94a3b8;
+    --muted: #94a3b8;
     --border: #334155;
     --border-glass: rgba(148, 163, 182, 0.40);
     --header-bg: #0f172a;
@@ -976,9 +978,9 @@ textarea:focus {
 
 .login-shell {
   width: 100%;
-  max-width: 460px;
+  max-width: 980px;
   display: grid;
-  grid-template-columns: 1fr;
+  grid-template-columns: 1.05fr 0.95fr;
   align-items: stretch;
   background: #fff;
   border: 1px solid var(--border);
@@ -1369,6 +1371,7 @@ textarea:focus {
   }
   .login-shell {
     grid-template-columns: 1fr;
+    max-width: 460px;
     border-radius: 18px;
   }
   .login-hero {
