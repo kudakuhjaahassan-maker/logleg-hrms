@@ -465,7 +465,7 @@ code {
   border-radius: var(--radius);
   padding: 16px;
   box-shadow: var(--shadow);
-  color: var(--text);
+  color: var(--text-main, var(--text-subtle, var(--text)));
   transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 }
 
