@@ -200,14 +200,15 @@ export default function ManagementSubscriptionsPage() {
         <div
           ref={lightboxRef}
           onClick={() => setOpenPaymentSlipModal(false)}
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4"
           style={{
             position: "fixed",
             top: 0,
             left: 0,
             right: 0,
             bottom: 0,
-            backgroundColor: "rgba(0, 0, 0, 0.85)",
-            zIndex: 9999,
+            backgroundColor: "rgba(0, 0, 0, 0.7)",
+            zIndex: 50,
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
@@ -243,9 +244,10 @@ export default function ManagementSubscriptionsPage() {
             src={paymentSlipImageUrl}
             alt="Payment slip"
             onClick={(e) => e.stopPropagation()}
+            className="max-w-full max-h-[85vh] object-contain rounded-lg"
             style={{
-              maxWidth: "95%",
-              maxHeight: "95vh",
+              maxWidth: "100%",
+              maxHeight: "85vh",
               objectFit: "contain",
               borderRadius: "8px",
             }}
@@ -265,8 +267,8 @@ export default function ManagementSubscriptionsPage() {
           </p>
         </div>
       ) : (
-        <div className="table-responsive">
-          <table className="table">
+        <div className="table-responsive w-full max-w-full overflow-x-auto">
+          <table className="table w-full" style={{ tableLayout: "auto", wordBreak: "break-word" }}>
             <thead>
               <tr>
                 <th>Email</th>
