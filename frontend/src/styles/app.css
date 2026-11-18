@@ -2309,7 +2309,7 @@ textarea:focus {
 .metric-card .value {
   font-size: 28px;
   font-weight: 700;
-  color: var(--text);
+  color: var(--text-main, var(--text-subtle, var(--text)));
   margin-bottom: 4px;
 }
 
