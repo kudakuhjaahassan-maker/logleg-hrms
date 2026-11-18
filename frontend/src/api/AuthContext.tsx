@@ -67,10 +67,12 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const login = async (email: string, password: string, companySlug: string) => {
     const res = await api.login({ email, password, companySlug });
     localStorage.setItem("logleg_token", res.accessToken);
-    setToken(res.accessToken);
-    // fetch full profile (includes company/department context)
+    // Load the full profile (company/department context) BEFORE exposing the
+    // token to the app. Otherwise route guards render the dashboard with a null
+    // user mid-login and the first mount fails until the page is refreshed.
     const me = await api.me();
     setUser(me.user);
+    setToken(res.accessToken);
     return me.user;
   };
 

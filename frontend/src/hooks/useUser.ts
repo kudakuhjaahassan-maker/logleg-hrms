@@ -1,11 +1,14 @@
 import { useContext } from "react";
 import { AuthContext } from "../api/AuthContext";
+import type { AuthUser } from "../api/client";
 
-export function useUser() {
-  const result = useContext(AuthContext) || { user: null, loading: true };
-  const { user: userResult } = result;
-  if (!userResult) {
-    throw new Error("useUser must be used within an AuthProvider with user loaded");
-  }
-  return { user: userResult };
+/**
+ * Reads the authenticated user without ever throwing during hydration.
+ * Right after sign-in the profile request may still be in flight, so consumers
+ * must treat `user` as nullable (and `loading` as true) instead of crashing into
+ * the root error boundary.
+ */
+export function useUser(): { user: AuthUser | null; loading: boolean } {
+  const ctx = useContext(AuthContext);
+  return { user: ctx?.user ?? null, loading: ctx?.loading ?? true };
 }

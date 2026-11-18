@@ -9,18 +9,42 @@ export interface PendingSubscriptionRequest {
   email: string;
   tier: SubscriptionPlan;
   status: SubscriptionStatus;
+  /** Uploaded payment slip (data URL or hosted URL) when supplied. */
+  proofUrl?: string | null;
+  /** Bank transaction reference when supplied. */
+  referenceId?: string | null;
   createdAt: Date;
 }
 
 export interface CreatePendingSubscriptionInput {
   userId: string;
   email: string;
-  tier: SubscriptionPlan;
+  /** "starter" | "growth" | "enterprise" (any casing) — normalized to SubscriptionPlan. */
+  tier: string;
   companyId: string;
+  proofUrl?: string | null;
+  referenceId?: string | null;
+}
+
+const ALLOWED_TIERS = ["STARTER", "GROWTH", "ENTERPRISE"] as const;
+
+/** Maps the checkout's lowercase tier names onto the SubscriptionPlan enum. */
+function normalizeTier(tier: unknown): SubscriptionPlan {
+  const normalized = String(tier ?? "").trim().toUpperCase();
+  if (!ALLOWED_TIERS.includes(normalized as (typeof ALLOWED_TIERS)[number])) {
+    throw new HttpError(400, "Invalid subscription tier. Choose starter, growth or enterprise.");
+  }
+  return normalized as SubscriptionPlan;
 }
 
 export async function createPendingSubscription(input: CreatePendingSubscriptionInput): Promise<PendingSubscriptionRequest> {
-  const { userId, email, tier, companyId } = input;
+  const { userId, email, companyId, proofUrl, referenceId } = input;
+
+  if (!userId || !companyId) {
+    throw new HttpError(401, "Authentication required to request a subscription");
+  }
+
+  const tier = normalizeTier(input.tier);
 
   const request = await prisma.pendingSubscriptionRequest.create({
     data: {
@@ -29,6 +53,8 @@ export async function createPendingSubscription(input: CreatePendingSubscription
       tier,
       status: "pending",
       companyId,
+      proofUrl: proofUrl || null,
+      referenceId: referenceId || null,
     },
     include: {
       company: {
@@ -47,6 +73,8 @@ export async function createPendingSubscription(input: CreatePendingSubscription
     email: request.email,
     tier: request.tier,
     status: request.status as SubscriptionStatus,
+    proofUrl: request.proofUrl,
+    referenceId: request.referenceId,
     createdAt: request.createdAt,
   };
 }
@@ -69,6 +97,8 @@ export async function getPendingRequests(companyId: string): Promise<PendingSubs
     email: r.email,
     tier: r.tier,
     status: r.status as SubscriptionStatus,
+    proofUrl: r.proofUrl,
+    referenceId: r.referenceId,
     createdAt: r.createdAt,
   }));
 }

@@ -39,6 +39,9 @@ model PendingSubscriptionRequest {
   email         String
   tier          SubscriptionPlan   /// starter / growth / enterprise
   status        String             @default("pending")
+  /// Payment proof supplied at checkout: uploaded slip (data URL / hosted URL) and/or bank reference.
+  proofUrl      String?
+  referenceId   String?
   createdAt     DateTime           @default(now())
   updatedAt     DateTime           @updatedAt
 

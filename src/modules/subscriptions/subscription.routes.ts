@@ -23,6 +23,27 @@ router.post(
   )
 );
 
+// POST /api/subscriptions/request - Submit a tier upgrade with payment proof for review
+router.post(
+  "/request",
+  authenticate,
+  asyncHandler(
+    async (req: import("express").Request, res: import("express").Response) => {
+      const body = ((req as any).body ?? {}) as Record<string, unknown>;
+      const input: subscriptionService.CreatePendingSubscriptionInput = {
+        userId: (req as any).auth?.userId || "",
+        email: (req as any).auth?.email || "",
+        tier: String(body.tier ?? ""),
+        companyId: (req as any).auth?.companyId || "",
+        proofUrl: typeof body.proofUrl === "string" ? body.proofUrl : null,
+        referenceId: typeof body.referenceId === "string" ? body.referenceId : null,
+      };
+      const result = await subscriptionService.createPendingSubscription(input);
+      res.status(201).json({ request: result });
+    }
+  )
+);
+
 // GET /api/subscriptions/pending - List all pending requests
 router.get(
   "/pending",

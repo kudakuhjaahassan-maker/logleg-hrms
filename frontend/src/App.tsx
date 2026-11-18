@@ -86,10 +86,15 @@ function HomeRedirect() {
 
 function AdminOnly({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
+  // Auth state may still be hydrating right after sign-in; render a placeholder
+  // instead of mounting pages that expect a loaded user (which would throw).
   if (loading) {
     return <div className="page-loading">Loading...</div>;
   }
-  if (user?.role === "EMPLOYEE") {
+  if (!user) {
+    return <div className="page-loading">Loading your account...</div>;
+  }
+  if (user.role === "EMPLOYEE") {
     return <Navigate to="/employee-dashboard" replace />;
   }
   return <>{children}</>;

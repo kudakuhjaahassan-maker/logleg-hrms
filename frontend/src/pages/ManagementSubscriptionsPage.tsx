@@ -106,8 +106,9 @@ export default function ManagementSubscriptionsPage() {
     }
   };
 
-  const tierLabel = (tier: string) => {
-    switch (tier) {
+  const tierLabel = (tier?: string | null) => {
+    // Tiers are stored as SubscriptionPlan enum values (STARTER/GROWTH/ENTERPRISE).
+    switch ((tier ?? "").toLowerCase()) {
       case "starter":
         return "Starter / Small Business";
       case "growth":
